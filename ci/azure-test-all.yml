@@ -1,0 +1,27 @@
+steps:
+  - bash: |
+      set -e -x
+      cargo +stable fmt --all -- --check
+    displayName: Check formatting
+  - bash: |
+      set -e -x
+      cargo test --no-run
+    displayName: Build everything
+    env:
+      RUST_BACKTRACE: 1
+      CARGO_INCREMENTAL: 0
+  - bash: |
+      set -e -x
+      cargo test --lib --examples
+    displayName: Run unit tests
+    env:
+      RUST_BACKTRACE: 1
+      CARGO_INCREMENTAL: 0
+  - bash: |
+      set -e -x
+      cargo test --tests
+    displayName: Run integration tests (disabled)
+    condition: False # Needs GPU or emulation
+    env:
+      RUST_BACKTRACE: 1
+      CARGO_INCREMENTAL: 0

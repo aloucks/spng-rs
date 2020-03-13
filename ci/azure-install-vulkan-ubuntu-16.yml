@@ -1,0 +1,13 @@
+steps:
+  - script: sudo apt install libvulkan1 mesa-vulkan-drivers vulkan-utils
+    displayName: Install vulkan drivers
+  - script: |
+      # wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+      # sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.1.97-xenial.list http://packages.lunarg.com/vulkan/1.1.97/lunarg-vulkan-1.1.97-xenial.list
+      wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+      sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.1.106-xenial.list http://packages.lunarg.com/vulkan/1.1.106/lunarg-vulkan-1.1.106-xenial.list
+      sudo apt update
+      sudo apt install lunarg-vulkan-sdk
+    displayName: Install vulkan SDK
+  - script: vulkaninfo
+    displayName: Run vulkaninfo

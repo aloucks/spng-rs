@@ -1,0 +1,61 @@
+trigger:
+  - master
+
+pr:
+  branches:
+    include:
+      - master
+
+schedules:
+  - cron: "0 12 * * 0"
+    displayName: Weekly Sunday build
+    branches:
+      include:
+        - master
+    always: true
+
+jobs:
+  - job: Windows
+    pool:
+      vmImage: vs2017-win2016
+    steps:
+      - checkout: self
+        submodules: recursive
+      - template: ci/azure-install-rust.yml
+      - template: ci/azure-test-all.yml
+    strategy:
+      matrix:
+        stable:
+          TOOLCHAIN: stable
+        nightly:
+          TOOLCHAIN: nightly
+
+  - job: Linux
+    pool:
+      vmImage: ubuntu-16.04
+    steps:
+      - checkout: self
+        submodules: recursive
+      - template: ci/azure-install-rust.yml
+      - template: ci/azure-test-all.yml
+    strategy:
+      matrix:
+        stable:
+          TOOLCHAIN: stable
+        nightly:
+          TOOLCHAIN: nightly
+
+  - job: MacOS
+    pool:
+      vmImage: macOS-10.14
+    steps:
+      - checkout: self
+        submodules: recursive
+      - template: ci/azure-install-rust.yml
+      - template: ci/azure-test-all.yml
+    strategy:
+      matrix:
+        stable:
+          TOOLCHAIN: stable
+        nightly:
+          TOOLCHAIN: nightly

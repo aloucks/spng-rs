@@ -12,6 +12,3 @@ license = "MIT OR Apache-2.0"
 spng-sys = { version = "0.1", path = "../spng-sys" }
 bitflags = "1.0"
 libc = "0.2"
-
-[dev-dependencies]
-image = { version = "0.23", features = ["png"] }

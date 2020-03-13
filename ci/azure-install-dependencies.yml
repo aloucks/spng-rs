@@ -1,0 +1,6 @@
+steps:
+  - bash: |
+      sudo apt update
+      sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+    displayName: Install GLFW dependencies
+    condition: eq(variables['Agent.OS'], 'Linux')
