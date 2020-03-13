@@ -1,0 +1,17 @@
+[package]
+name = "spng-sys"
+version = "0.1.0"
+authors = ["Aaron Loucks <aloucks@cofront.net>"]
+edition = "2018"
+keywords = ["spng", "png", "image", "decoder"]
+links = "spng"
+repository = "https://github.com/aloucks/spng-rs"
+documentation = "https://docs.rs/spng-sys"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+libz-sys = "1.0"
+libc = "0.2"
+
+[build-dependencies]
+cc = "1.0"
