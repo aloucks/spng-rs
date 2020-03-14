@@ -21,7 +21,7 @@
 //! ```
 
 use std::convert::TryFrom;
-use std::{io, mem, ptr, slice};
+use std::{io, mem, slice};
 
 use spng_sys as sys;
 
@@ -67,7 +67,7 @@ impl TryFrom<u8> for ColorType {
 
 impl ColorType {
     /// Returns the number of samples per pixel
-    pub fn samples(&self) -> usize {
+    pub fn samples(self) -> usize {
         use ColorType::*;
         match self {
             Grayscale | Indexed => 1,
@@ -179,7 +179,7 @@ struct Context {
 
 impl Drop for Context {
     fn drop(&mut self) {
-        if self.raw != ptr::null_mut() {
+        if !self.raw.is_null() {
             unsafe {
                 sys::spng_ctx_free(self.raw);
             }
@@ -191,8 +191,8 @@ impl Context {
     fn new(flags: i32) -> Result<Context, Error> {
         unsafe {
             let raw = sys::spng_ctx_new(flags);
-            if raw == ptr::null_mut() {
-                return Err(Error::Mem);
+            if raw.is_null() {
+                Err(Error::Mem)
             } else {
                 Ok(Context { raw })
             }

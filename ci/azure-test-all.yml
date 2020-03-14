@@ -12,6 +12,14 @@ steps:
       CARGO_INCREMENTAL: 0
   - bash: |
       set -e -x
+      cargo clippy --all -- -D warnings
+    displayName: Run clippy (stable only)
+    condition: eq(variables['TOOLCHAIN'], 'stable')
+    env:
+      RUST_BACKTRACE: 1
+      CARGO_INCREMENTAL: 0
+  - bash: |
+      set -e -x
       cargo test --lib --examples
     displayName: Run unit tests
     env:
