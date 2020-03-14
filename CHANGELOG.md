@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - 2020-03-13
+
 ## [0.1.0-alpha+2] - 2020-03-13
 ### Fixed
 - Buffered stream decoding now reads from the source buffer until the
@@ -20,10 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-[Unreleased]: https://github.com/aloucks/spng-rs/compare/v0.1.0-alpha+2...HEAD
+[Unreleased]: https://github.com/aloucks/spng-rs/compare/v0.1.0-alpha.3...HEAD
 
 [0.3.0]: https://github.com/aloucks/spng-rs/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aloucks/spng-rs/compare/v0.1.0...v0.2.0
+[0.1.0-alpha.3]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0-alpha.3
 [0.1.0-alpha+2]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0-alpha+2
 [0.1.0-alpha+1]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0-alpha+1
 
