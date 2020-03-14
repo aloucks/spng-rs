@@ -10,8 +10,8 @@ Rust bindings to [libspng].
 
 | crate    | spng-rs  | libspng |
 | -------- | -------- | ------- |
-| spng     |  `0.1.0-alpha+1` | `master` (rev = [2079ef6]) |
-| spng-sys |  `0.1.0-alpha+1` | `master` (rev = [2079ef6]) |
+| spng     |  `0.1.0-alpha+2` | `master` (rev = [2079ef6]) |
+| spng-sys |  `0.1.0-alpha+2` | `master` (rev = [2079ef6]) |
 
 ## Example
 
