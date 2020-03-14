@@ -6,19 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2020-03-13
+## [0.1.0-alpha+1] - 2020-03-13
 ### Added
 - Initial rust wrapper with minimal API surface
-- Initial native bindings to [libspng] `0.5.0`
+- Initial native bindings to [libspng] `master` (2079ef6)
 
 ### Changed
 
 ### Removed
 
-[Unreleased]: https://github.com/aloucks/spng-rs/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/aloucks/spng-rs/compare/v0.1.0-alpha+1...HEAD
 
 [0.3.0]: https://github.com/aloucks/spng-rs/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aloucks/spng-rs/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0
+[0.1.0-alpha+1]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0-alpha+1
 
 [libspng]: https://libspng.org
