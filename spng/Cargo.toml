@@ -8,6 +8,7 @@ repository = "https://github.com/aloucks/spng-rs"
 documentation = "https://docs.rs/spng"
 license = "MIT OR Apache-2.0"
 description = "Rust bindings to libspng"
+readme = "../README.md"
 
 [dependencies]
 spng-sys = { version = "0.1.0-alpha", path = "../spng-sys" }
