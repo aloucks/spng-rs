@@ -166,7 +166,7 @@ unsafe extern "C" fn read_fn<R: io::Read>(
     let reader: &mut R = &mut *(user as *mut R as *mut _);
     let dest = slice::from_raw_parts_mut(dest as *mut u8, len);
     match reader.read(dest) {
-        Ok(0) => sys::spng_errno_SPNG_EOF,
+        Ok(0) => sys::spng_errno_SPNG_IO_EOF,
         Ok(_) => sys::spng_errno_SPNG_OK,
         Err(_) => sys::spng_errno_SPNG_IO_ERROR,
     }
