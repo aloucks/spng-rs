@@ -22,6 +22,7 @@ jobs:
       - checkout: self
         submodules: recursive
       - template: ci/azure-install-rust.yml
+      - template: ci/azure-install-dependencies.yml
       - template: ci/azure-test-all.yml
     strategy:
       matrix:
@@ -37,6 +38,7 @@ jobs:
       - checkout: self
         submodules: recursive
       - template: ci/azure-install-rust.yml
+      - template: ci/azure-install-dependencies.yml
       - template: ci/azure-test-all.yml
     strategy:
       matrix:
@@ -52,6 +54,7 @@ jobs:
       - checkout: self
         submodules: recursive
       - template: ci/azure-install-rust.yml
+      - template: ci/azure-install-dependencies.yml
       - template: ci/azure-test-all.yml
     strategy:
       matrix:
