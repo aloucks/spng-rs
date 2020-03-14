@@ -24,7 +24,7 @@ pub enum Error {
     InterlaceMethod = sys::spng_errno_SPNG_EINTERLACE_METHOD,
     IhdrSize = sys::spng_errno_SPNG_EIHDR_SIZE,
     Noihdr = sys::spng_errno_SPNG_ENOIHDR,
-    // ChunkPos = sys::spng_errno_spng_errno_SPNG_ECHUNK_POS,
+    ChunkPos = sys::spng_errno_SPNG_ECHUNK_POS,
     ChunkSize = sys::spng_errno_SPNG_ECHUNK_SIZE,
     ChunkCrc = sys::spng_errno_SPNG_ECHUNK_CRC,
     ChunkType = sys::spng_errno_SPNG_ECHUNK_TYPE,
@@ -83,8 +83,8 @@ pub enum Error {
     Flags = sys::spng_errno_SPNG_EFLAGS,
     Chunkavail = sys::spng_errno_SPNG_ECHUNKAVAIL,
     NcodeOnly = sys::spng_errno_SPNG_ENCODE_ONLY,
-    // Oi = sys::spng_errno_SPNG_EOI,
-    // Noplte = sys::spng_errno_SPNG_ENOPLTE,
+    Oi = sys::spng_errno_SPNG_EOI,
+    Noplte = sys::spng_errno_SPNG_ENOPLTE,
 }
 
 pub fn check_err(e: i32) -> Result<(), Error> {
@@ -108,7 +108,7 @@ pub fn check_err(e: i32) -> Result<(), Error> {
         sys::spng_errno_SPNG_EINTERLACE_METHOD => Err(InterlaceMethod),
         sys::spng_errno_SPNG_EIHDR_SIZE => Err(IhdrSize),
         sys::spng_errno_SPNG_ENOIHDR => Err(Noihdr),
-        // sys::spng_errno_SPNG_ECHUNK_POS => Err(chunkPos),
+        sys::spng_errno_SPNG_ECHUNK_POS => Err(ChunkPos),
         sys::spng_errno_SPNG_ECHUNK_SIZE => Err(ChunkSize),
         sys::spng_errno_SPNG_ECHUNK_CRC => Err(ChunkCrc),
         sys::spng_errno_SPNG_ECHUNK_TYPE => Err(ChunkType),
@@ -167,8 +167,8 @@ pub fn check_err(e: i32) -> Result<(), Error> {
         sys::spng_errno_SPNG_EFLAGS => Err(Flags),
         sys::spng_errno_SPNG_ECHUNKAVAIL => Err(Chunkavail),
         sys::spng_errno_SPNG_ENCODE_ONLY => Err(NcodeOnly),
-        // sys::spng_errno_SPNG_EOI => Err(oi),
-        // sys::spng_errno_SPNG_ENOPLTE => Err(noplte),
+        sys::spng_errno_SPNG_EOI => Err(Oi),
+        sys::spng_errno_SPNG_ENOPLTE => Err(Noplte),
         _ => {
             eprintln!("unknown spng error code: {}", e);
             Err(Inval)

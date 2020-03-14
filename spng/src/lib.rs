@@ -82,9 +82,11 @@ bitflags::bitflags! {
     /// Decoding flags
     pub struct DecodeFlags: i32 {
         /// Apply transparency
-        const TRANSPARENCY = sys::spng_decode_flags_SPNG_DECODE_USE_TRNS;
+        const TRANSPARENCY = sys::spng_decode_flags_SPNG_DECODE_TRNS;
         /// Apply gamma correction
-        const GAMMA = sys::spng_decode_flags_SPNG_DECODE_USE_GAMA;
+        const GAMMA = sys::spng_decode_flags_SPNG_DECODE_GAMMA;
+        /// Initialize for progressive reads
+        const PROGRESSIVE = sys::spng_decode_flags_SPNG_DECODE_PROGRESSIVE;
         #[doc(hidden)]
         const SIGNIFICANT_BIT = sys::spng_decode_flags_SPNG_DECODE_USE_SBIT;
     }
@@ -165,11 +167,17 @@ unsafe extern "C" fn read_fn<R: io::Read>(
 ) -> libc::c_int {
     let reader: &mut R = &mut *(user as *mut R as *mut _);
     let dest = slice::from_raw_parts_mut(dest as *mut u8, len);
-    match reader.read(dest) {
-        Ok(0) => sys::spng_errno_SPNG_IO_EOF,
-        Ok(_) => sys::spng_errno_SPNG_OK,
-        Err(_) => sys::spng_errno_SPNG_IO_ERROR,
+    let mut offset = 0;
+    while offset < len {
+        let buf = &mut dest[offset..];
+        let ret = reader.read(buf);
+        match ret {
+            Ok(0) => return sys::spng_errno_SPNG_IO_EOF,
+            Ok(n) => offset += n,
+            Err(_) => return sys::spng_errno_SPNG_IO_ERROR,
+        }
     }
+    sys::spng_errno_SPNG_OK
 }
 
 #[derive(Debug)]
