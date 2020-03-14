@@ -4,9 +4,6 @@
 #[allow(non_camel_case_types)]
 mod ffi;
 
-#[link(name = "z")]
-extern "C" {}
-
 pub use ffi::*;
 
 #[test]

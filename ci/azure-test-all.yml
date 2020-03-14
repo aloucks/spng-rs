@@ -5,7 +5,7 @@ steps:
     displayName: Check formatting
   - bash: |
       set -e -x
-      cargo test --no-run
+      cargo test --no-run -vv
     displayName: Build everything
     env:
       RUST_BACKTRACE: 1

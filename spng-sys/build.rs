@@ -10,4 +10,6 @@ fn main() {
 
     // DEP_SPNG_INCLUDE
     println!("include=libspng");
+
+    println!("cargo:rustc-link-lib=z");
 }
