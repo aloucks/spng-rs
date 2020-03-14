@@ -20,8 +20,8 @@ steps:
   - bash: |
       set -e -x
       cargo test --tests
-    displayName: Run integration tests (disabled)
-    condition: False # Needs GPU or emulation
+    displayName: Run integration tests
+    # condition: False
     env:
       RUST_BACKTRACE: 1
       CARGO_INCREMENTAL: 0
