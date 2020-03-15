@@ -150,11 +150,9 @@ pub struct Info {
 #[derive(Debug)]
 /// PNG reader
 pub struct Reader<R> {
-    ctx: Context,
+    ctx: Context<R>,
     out_format: Format,
     info: Info,
-    #[allow(unused)]
-    inner: Box<R>,
     decode_flags: DecodeFlags,
     output_buffer_size: usize,
 }
@@ -181,11 +179,12 @@ unsafe extern "C" fn read_fn<R: io::Read>(
 }
 
 #[derive(Debug)]
-struct Context {
+struct Context<R> {
     raw: *mut sys::spng_ctx,
+    reader: Option<Box<R>>,
 }
 
-impl Drop for Context {
+impl<R> Drop for Context<R> {
     fn drop(&mut self) {
         if !self.raw.is_null() {
             unsafe {
@@ -195,14 +194,14 @@ impl Drop for Context {
     }
 }
 
-impl Context {
-    fn new(flags: i32) -> Result<Context, Error> {
+impl<R> Context<R> {
+    fn new(flags: i32) -> Result<Context<R>, Error> {
         unsafe {
             let raw = sys::spng_ctx_new(flags);
             if raw.is_null() {
                 Err(Error::Mem)
             } else {
-                Ok(Context { raw })
+                Ok(Context { raw, reader: None })
             }
         }
     }
@@ -223,18 +222,15 @@ impl Context {
         unsafe { check_err(sys::spng_set_image_limits(self.raw, max_width, max_height)) }
     }
 
-    fn set_png_stream<R>(
-        &mut self,
-        read_fn: sys::spng_read_fn,
-        reader: *mut R,
-    ) -> Result<(), Error> {
-        unsafe {
-            check_err(sys::spng_set_png_stream(
-                self.raw,
-                read_fn,
-                reader as *mut _,
-            ))
-        }
+    fn set_png_stream(&mut self, reader: R) -> Result<(), Error>
+    where
+        R: io::Read,
+    {
+        let mut boxed = Box::new(reader);
+        let user = boxed.as_mut() as *mut R as *mut _;
+        self.reader = Some(boxed);
+        let read_fn: sys::spng_read_fn = Some(read_fn::<R>);
+        unsafe { check_err(sys::spng_set_png_stream(self.raw, read_fn, user)) }
     }
 
     fn get_ihdr(&self) -> Result<sys::spng_ihdr, Error> {
@@ -297,10 +293,9 @@ impl<R: io::Read> Decoder<R> {
 
     /// Read the `png` header and initialize decoding.
     pub fn read_info(self) -> Result<(OutputInfo, Reader<R>), Error> {
-        let mut inner = Box::new(self.reader);
         let mut ctx = Context::new(self.decode_flags.bits)?;
         ctx.set_image_limits(self.limits.max_width, self.limits.max_height)?;
-        ctx.set_png_stream(Some(read_fn::<R>), inner.as_mut() as *mut R as *mut _)?;
+        ctx.set_png_stream(self.reader)?;
         let header = ctx.get_ihdr()?;
 
         let info = Info {
@@ -333,7 +328,6 @@ impl<R: io::Read> Decoder<R> {
             out_format,
             info,
             decode_flags: self.decode_flags,
-            inner,
             output_buffer_size: buffer_size,
         };
 
