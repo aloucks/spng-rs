@@ -12,6 +12,7 @@ steps:
       CARGO_INCREMENTAL: 0
   - bash: |
       set -e -x
+      rustup component add clippy
       cargo clippy --all -- -D warnings
     displayName: Run clippy (stable only)
     condition: eq(variables['TOOLCHAIN'], 'stable')
