@@ -21,7 +21,7 @@
 //! ```
 
 use std::convert::TryFrom;
-use std::{io, mem, slice};
+use std::{io, mem, mem::MaybeUninit, slice};
 
 use spng_sys as sys;
 
@@ -323,72 +323,72 @@ impl<R> RawContext<R> {
 
     pub fn get_ihdr(&self) -> Result<sys::spng_ihdr, Error> {
         unsafe {
-            let mut ihdr = mem::zeroed();
-            check_err(sys::spng_get_ihdr(self.raw, &mut ihdr))?;
-            Ok(ihdr)
+            let mut ihdr = MaybeUninit::uninit();
+            check_err(sys::spng_get_ihdr(self.raw, ihdr.as_mut_ptr()))?;
+            Ok(ihdr.assume_init())
         }
     }
 
     pub fn get_plte(&self) -> Result<sys::spng_plte, Error> {
         unsafe {
-            let mut plte = mem::zeroed();
-            check_err(sys::spng_get_plte(self.raw, &mut plte))?;
-            Ok(plte)
+            let mut plte = MaybeUninit::uninit();
+            check_err(sys::spng_get_plte(self.raw, plte.as_mut_ptr()))?;
+            Ok(plte.assume_init())
         }
     }
 
     pub fn get_trns(&self) -> Result<sys::spng_trns, Error> {
         unsafe {
-            let mut trns = mem::zeroed();
-            check_err(sys::spng_get_trns(self.raw, &mut trns))?;
-            Ok(trns)
+            let mut trns = MaybeUninit::uninit();
+            check_err(sys::spng_get_trns(self.raw, trns.as_mut_ptr()))?;
+            Ok(trns.assume_init())
         }
     }
 
     pub fn get_chrm(&self) -> Result<sys::spng_chrm, Error> {
         unsafe {
-            let mut chrm = mem::zeroed();
-            check_err(sys::spng_get_chrm(self.raw, &mut chrm))?;
-            Ok(chrm)
+            let mut chrm = MaybeUninit::uninit();
+            check_err(sys::spng_get_chrm(self.raw, chrm.as_mut_ptr()))?;
+            Ok(chrm.assume_init())
         }
     }
 
     pub fn get_chrm_int(&self) -> Result<sys::spng_chrm_int, Error> {
         unsafe {
-            let mut spng_chrm_int = mem::zeroed();
-            check_err(sys::spng_get_chrm_int(self.raw, &mut spng_chrm_int))?;
-            Ok(spng_chrm_int)
+            let mut spng_chrm_int = MaybeUninit::uninit();
+            check_err(sys::spng_get_chrm_int(self.raw, spng_chrm_int.as_mut_ptr()))?;
+            Ok(spng_chrm_int.assume_init())
         }
     }
 
     pub fn get_gama(&self) -> Result<f64, Error> {
         unsafe {
-            let mut gama = mem::zeroed();
-            check_err(sys::spng_get_gama(self.raw, &mut gama))?;
-            Ok(gama)
+            let mut gama = MaybeUninit::uninit();
+            check_err(sys::spng_get_gama(self.raw, gama.as_mut_ptr()))?;
+            Ok(gama.assume_init())
         }
     }
 
     pub fn get_iccp(&self) -> Result<sys::spng_iccp, Error> {
         unsafe {
-            let mut iccp = mem::zeroed();
-            check_err(sys::spng_get_iccp(self.raw, &mut iccp))?;
-            Ok(iccp)
+            let mut iccp = MaybeUninit::uninit();
+            check_err(sys::spng_get_iccp(self.raw, iccp.as_mut_ptr()))?;
+            Ok(iccp.assume_init())
         }
     }
 
     pub fn get_sbit(&self) -> Result<sys::spng_sbit, Error> {
         unsafe {
-            let mut sbit = mem::zeroed();
-            check_err(sys::spng_get_sbit(self.raw, &mut sbit))?;
-            Ok(sbit)
+            let mut sbit = MaybeUninit::uninit();
+            check_err(sys::spng_get_sbit(self.raw, sbit.as_mut_ptr()))?;
+            Ok(sbit.assume_init())
         }
     }
 
     /// Returns the `sRGB` rendering intent or `Err(Chunkavil)` for non-`sRGB` images.
     pub fn get_srgb(&self) -> Result<u8, Error> {
         unsafe {
-            let mut rendering_intent = mem::zeroed();
+            let mut rendering_intent = 0;
             check_err(sys::spng_get_srgb(self.raw, &mut rendering_intent))?;
             Ok(rendering_intent)
         }
@@ -402,26 +402,27 @@ impl<R> RawContext<R> {
             use std::ptr;
             let mut len = 0;
             check_err(sys::spng_get_text(self.raw, ptr::null_mut(), &mut len))?;
-            let mut text = vec![mem::zeroed::<sys::spng_text>(); len as usize];
+            let mut text =
+                vec![MaybeUninit::<sys::spng_text>::uninit().assume_init(); len as usize];
             check_err(sys::spng_get_text(self.raw, text.as_mut_ptr(), &mut len))?;
-            Ok(text)
+            Ok(mem::transmute(text))
         }
     }
 
     pub fn get_bkgd(&self) -> Result<sys::spng_bkgd, Error> {
         unsafe {
-            let mut bkgd = mem::zeroed();
-            check_err(sys::spng_get_bkgd(self.raw, &mut bkgd))?;
-            Ok(bkgd)
+            let mut bkgd = MaybeUninit::uninit();
+            check_err(sys::spng_get_bkgd(self.raw, bkgd.as_mut_ptr()))?;
+            Ok(bkgd.assume_init())
         }
     }
 
     /// Return the physical pixel dimensions
     pub fn get_phys(&self) -> Result<sys::spng_phys, Error> {
         unsafe {
-            let mut phys = mem::zeroed();
-            check_err(sys::spng_get_phys(self.raw, &mut phys))?;
-            Ok(phys)
+            let mut phys = MaybeUninit::uninit();
+            check_err(sys::spng_get_phys(self.raw, phys.as_mut_ptr()))?;
+            Ok(phys.assume_init())
         }
     }
 
@@ -433,26 +434,27 @@ impl<R> RawContext<R> {
             use std::ptr;
             let mut len = 0;
             check_err(sys::spng_get_splt(self.raw, ptr::null_mut(), &mut len))?;
-            let mut splt = vec![mem::zeroed::<sys::spng_splt>(); len as usize];
+            let mut splt =
+                vec![MaybeUninit::<sys::spng_splt>::uninit().assume_init(); len as usize];
             check_err(sys::spng_get_splt(self.raw, splt.as_mut_ptr(), &mut len))?;
-            Ok(splt)
+            Ok(mem::transmute(splt))
         }
     }
 
     pub fn get_time(&self) -> Result<sys::spng_time, Error> {
         unsafe {
-            let mut time = mem::zeroed();
-            check_err(sys::spng_get_time(self.raw, &mut time))?;
-            Ok(time)
+            let mut time = MaybeUninit::uninit();
+            check_err(sys::spng_get_time(self.raw, time.as_mut_ptr()))?;
+            Ok(time.assume_init())
         }
     }
 
     /// Return the image offset
     pub fn get_offs(&self) -> Result<sys::spng_offs, Error> {
         unsafe {
-            let mut offs = mem::zeroed();
-            check_err(sys::spng_get_offs(self.raw, &mut offs))?;
-            Ok(offs)
+            let mut offs = MaybeUninit::uninit();
+            check_err(sys::spng_get_offs(self.raw, offs.as_mut_ptr()))?;
+            Ok(offs.assume_init())
         }
     }
 
@@ -461,17 +463,17 @@ impl<R> RawContext<R> {
     /// Note that `exif.data` is freed when the context is destroyed.
     pub fn get_exif(&self) -> Result<sys::spng_exif, Error> {
         unsafe {
-            let mut exif = mem::zeroed();
-            check_err(sys::spng_get_exif(self.raw, &mut exif))?;
-            Ok(exif)
+            let mut exif = MaybeUninit::uninit();
+            check_err(sys::spng_get_exif(self.raw, exif.as_mut_ptr()))?;
+            Ok(exif.assume_init())
         }
     }
 
     pub fn get_row_info(&self) -> Result<sys::spng_row_info, Error> {
         unsafe {
-            let mut row_info = mem::zeroed();
-            check_err(sys::spng_get_row_info(self.raw, &mut row_info))?;
-            Ok(row_info)
+            let mut row_info = MaybeUninit::uninit();
+            check_err(sys::spng_get_row_info(self.raw, row_info.as_mut_ptr()))?;
+            Ok(row_info.assume_init())
         }
     }
 
