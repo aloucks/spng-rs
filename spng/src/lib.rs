@@ -34,6 +34,18 @@ use raw::RawContext;
 
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum CrcAction {
+    /// Default
+    Error = sys::spng_crc_action_SPNG_CRC_ERROR,
+    /// Discard chunk, invalid for critical chunks
+    Discard = sys::spng_crc_action_SPNG_CRC_DISCARD,
+    /// Ignore and don't calculate checksum
+    Use = sys::spng_crc_action_SPNG_CRC_USE,
+}
+
+/// PNG output format
+#[repr(i32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Format {
     Rgba8 = sys::spng_format_SPNG_FMT_RGBA8,
     Rgba16 = sys::spng_format_SPNG_FMT_RGBA16,

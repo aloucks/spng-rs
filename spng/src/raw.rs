@@ -1,6 +1,6 @@
 use crate::{
     error::{check_err, Error},
-    ContextFlags, DecodeFlags, Format,
+    ContextFlags, CrcAction, DecodeFlags, Format,
 };
 
 use spng_sys as sys;
@@ -27,9 +27,44 @@ unsafe extern "C" fn read_fn<R: io::Read>(
     sys::spng_errno_SPNG_OK
 }
 
+/// Helper trait for converting optional ancillary chunks into `Option<T>`.
+///
+/// <http://www.libpng.org/pub/png/spec/1.1/PNG-Chunks.html#C.Ancillary-chunks>
+///
+/// ## Ancilary chunks
+///
+/// * BKGD
+/// * CHRM
+/// * GAMA
+/// * HIST
+/// * ICCP
+/// * PHYS
+/// * SBIT
+/// * SPLT
+/// * SRGB
+/// * TEXT
+/// * TIME
+/// * TRNS
+/// * ZTXT
+pub trait IfPresent<T> {
+    /// Converts `Err(Error::Chunkavail)` into `Ok(None)`.
+    fn if_present(self) -> Result<Option<T>, Error>;
+}
+
+impl<T> IfPresent<T> for Result<T, Error> {
+    fn if_present(self) -> Result<Option<T>, Error> {
+        match self {
+            Ok(value) => Ok(Some(value)),
+            Err(Error::Chunkavail) => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+}
+
 /// The raw decoding context.
 ///
-/// <http://www.libpng.org/pub/png/spec/1.1/PNG-Chunks.html>
+/// * <https://libspng.org/>
+/// * <http://www.libpng.org/pub/png/spec/1.1/PNG-Contents.html>
 #[derive(Debug)]
 pub struct RawContext<R> {
     raw: *mut sys::spng_ctx,
@@ -74,11 +109,31 @@ impl<R> RawContext<R> {
         Ok(len)
     }
 
+    /// Set image width and height limits, these may not be larger than `(2^31)-1`.
     pub fn set_image_limits(&mut self, max_width: u32, max_height: u32) -> Result<(), Error> {
         unsafe { check_err(sys::spng_set_image_limits(self.raw, max_width, max_height)) }
     }
 
-    /// Returns the image limits: `(width, height)`
+    /// Set how chunk CRC errors should be handled for critical and ancillary chunks.
+    /// ### Note
+    /// Partially implemented, `SPNG_CRC_DISCARD` has no effect.
+    pub fn set_crc_action(
+        &mut self,
+        critical: CrcAction,
+        ancillary: CrcAction,
+    ) -> Result<(), Error> {
+        unsafe {
+            check_err(sys::spng_set_crc_action(
+                self.raw,
+                critical as i32,
+                ancillary as i32,
+            ))
+        }
+    }
+
+    /// Get image width and height limits.
+    ///
+    /// Returns `(width, height)`
     pub fn get_image_limits(&self) -> Result<(u32, u32), Error> {
         let mut width = 0;
         let mut height = 0;
@@ -92,6 +147,29 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get chunk size and chunk cache limits.
+    ///
+    /// Returns `(chunk_size, cache_size)`
+    pub fn get_chunk_limits(&self) -> Result<(usize, usize), Error> {
+        let mut chunk_size = 0;
+        let mut cache_size = 0;
+        unsafe {
+            check_err(sys::spng_get_chunk_limits(
+                self.raw,
+                &mut chunk_size,
+                &mut cache_size,
+            ))?;
+            Ok((chunk_size, cache_size))
+        }
+    }
+
+    /// Set chunk size and chunk cache limits, the default chunk size limit is `(2^31)-1`, the default
+    /// chunk cache limit is `SIZE_MAX`.
+    pub fn set_chunk_limits(&mut self, chunk_size: usize, cache_size: usize) -> Result<(), Error> {
+        unsafe { check_err(sys::spng_set_chunk_limits(self.raw, chunk_size, cache_size)) }
+    }
+
+    /// Get the image header.
     pub fn get_ihdr(&self) -> Result<sys::spng_ihdr, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -100,6 +178,7 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get the image palette.
     pub fn get_plte(&self) -> Result<sys::spng_plte, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -108,6 +187,7 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get the image transparency.
     pub fn get_trns(&self) -> Result<sys::spng_trns, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -116,6 +196,7 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get primary chromacities and white point as floating point numbers.
     pub fn get_chrm(&self) -> Result<sys::spng_chrm, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -124,6 +205,7 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get primary chromacities and white point in the PNG's internal representation.
     pub fn get_chrm_int(&self) -> Result<sys::spng_chrm_int, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -132,6 +214,7 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get the image gamma.
     pub fn get_gama(&self) -> Result<f64, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -140,6 +223,9 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get the ICC profile.
+    ///
+    /// *Note: ICC profiles are not validated.*
     pub fn get_iccp(&self) -> Result<sys::spng_iccp, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -148,6 +234,7 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get the significant bits.
     pub fn get_sbit(&self) -> Result<sys::spng_sbit, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -156,7 +243,7 @@ impl<R> RawContext<R> {
         }
     }
 
-    /// Returns the `sRGB` rendering intent or `Err(Chunkavil)` for non-`sRGB` images.
+    /// Get the `sRGB` rendering intent.
     pub fn get_srgb(&self) -> Result<u8, Error> {
         unsafe {
             let mut rendering_intent = 0;
@@ -165,9 +252,16 @@ impl<R> RawContext<R> {
         }
     }
 
-    /// Returns text information
+    /// Get text information.
     ///
-    /// Note that the referenced text data pointers are freed when the context is dropped.
+    /// ### Note
+    /// Due to the structure of PNG files it is recommended to call this function after
+    /// [`decode_image`] to retrieve all text chunks.
+    ///
+    /// ### Safety
+    /// Text data is freed after the context is dropped.
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
     pub fn get_text(&self) -> Result<Vec<sys::spng_text>, Error> {
         unsafe {
             use std::ptr;
@@ -176,10 +270,11 @@ impl<R> RawContext<R> {
             let mut chunk =
                 vec![MaybeUninit::<sys::spng_text>::uninit().assume_init(); len as usize];
             check_err(sys::spng_get_text(self.raw, chunk.as_mut_ptr(), &mut len))?;
-            Ok(mem::transmute(chunk))
+            Ok(chunk)
         }
     }
 
+    /// Get the image background color.
     pub fn get_bkgd(&self) -> Result<sys::spng_bkgd, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -188,7 +283,7 @@ impl<R> RawContext<R> {
         }
     }
 
-    /// Return the physical pixel dimensions
+    /// Get physical pixel dimensions.
     pub fn get_phys(&self) -> Result<sys::spng_phys, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -197,9 +292,12 @@ impl<R> RawContext<R> {
         }
     }
 
-    /// Returns suggested palettes
+    /// Get the suggested palettes.
     ///
-    /// Note that the referenced suggested palette pointers are freed when the context is dropped.
+    /// ### Safety
+    /// Suggested palettes are freed when the context is dropped.
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
     pub fn get_splt(&self) -> Result<Vec<sys::spng_splt>, Error> {
         unsafe {
             use std::ptr;
@@ -212,6 +310,12 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get the modification time.
+    ///
+    /// ### Note
+    /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
     pub fn get_time(&self) -> Result<sys::spng_time, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -220,7 +324,7 @@ impl<R> RawContext<R> {
         }
     }
 
-    /// Return the image offset
+    /// Get the image offset.
     pub fn get_offs(&self) -> Result<sys::spng_offs, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -229,9 +333,16 @@ impl<R> RawContext<R> {
         }
     }
 
-    /// Return `EXIF` data.
+    /// Get the `EXIF` data.
     ///
-    /// Note that `exif.data` is freed when the context is destroyed.
+    /// ### Note
+    /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
+    ///
+    ///
+    /// ### Safety
+    /// `exif.data` is freed when the context is dropped.
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
     pub fn get_exif(&self) -> Result<sys::spng_exif, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
