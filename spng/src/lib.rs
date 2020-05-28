@@ -301,7 +301,7 @@ impl<R> Decoder<R> {
     where
         R: io::Read,
     {
-        let mut ctx = RawContext::new(self.context_flags)?;
+        let mut ctx = RawContext::with_flags(self.context_flags)?;
         ctx.set_image_limits(self.limits.max_width, self.limits.max_height)?;
         ctx.set_png_stream(self.reader)?;
         let header = ctx.get_ihdr()?;
@@ -327,7 +327,7 @@ impl<'a> Decoder<&'a [u8]> {
     ///
     /// [`read_info`]: method@Decoder::read_info
     pub fn read_info_from_slice(self) -> Result<(OutputInfo, Reader<&'a [u8]>), Error> {
-        let mut ctx = RawContext::new(self.context_flags)?;
+        let mut ctx = RawContext::with_flags(self.context_flags)?;
         ctx.set_image_limits(self.limits.max_width, self.limits.max_height)?;
         ctx.set_png_buffer(self.reader)?;
         let header = ctx.get_ihdr()?;

@@ -47,7 +47,11 @@ impl<R> Drop for RawContext<R> {
 }
 
 impl<R> RawContext<R> {
-    pub fn new(flags: ContextFlags) -> Result<RawContext<R>, Error> {
+    pub fn new() -> Result<RawContext<R>, Error> {
+        RawContext::with_flags(ContextFlags::empty())
+    }
+
+    pub fn with_flags(flags: ContextFlags) -> Result<RawContext<R>, Error> {
         unsafe {
             let raw = sys::spng_ctx_new(flags.bits());
             if raw.is_null() {
@@ -90,65 +94,65 @@ impl<R> RawContext<R> {
 
     pub fn get_ihdr(&self) -> Result<sys::spng_ihdr, Error> {
         unsafe {
-            let mut ihdr = MaybeUninit::uninit();
-            check_err(sys::spng_get_ihdr(self.raw, ihdr.as_mut_ptr()))?;
-            Ok(ihdr.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_ihdr(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     pub fn get_plte(&self) -> Result<sys::spng_plte, Error> {
         unsafe {
-            let mut plte = MaybeUninit::uninit();
-            check_err(sys::spng_get_plte(self.raw, plte.as_mut_ptr()))?;
-            Ok(plte.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_plte(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     pub fn get_trns(&self) -> Result<sys::spng_trns, Error> {
         unsafe {
-            let mut trns = MaybeUninit::uninit();
-            check_err(sys::spng_get_trns(self.raw, trns.as_mut_ptr()))?;
-            Ok(trns.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_trns(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     pub fn get_chrm(&self) -> Result<sys::spng_chrm, Error> {
         unsafe {
-            let mut chrm = MaybeUninit::uninit();
-            check_err(sys::spng_get_chrm(self.raw, chrm.as_mut_ptr()))?;
-            Ok(chrm.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_chrm(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     pub fn get_chrm_int(&self) -> Result<sys::spng_chrm_int, Error> {
         unsafe {
-            let mut spng_chrm_int = MaybeUninit::uninit();
-            check_err(sys::spng_get_chrm_int(self.raw, spng_chrm_int.as_mut_ptr()))?;
-            Ok(spng_chrm_int.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_chrm_int(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     pub fn get_gama(&self) -> Result<f64, Error> {
         unsafe {
-            let mut gama = MaybeUninit::uninit();
-            check_err(sys::spng_get_gama(self.raw, gama.as_mut_ptr()))?;
-            Ok(gama.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_gama(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     pub fn get_iccp(&self) -> Result<sys::spng_iccp, Error> {
         unsafe {
-            let mut iccp = MaybeUninit::uninit();
-            check_err(sys::spng_get_iccp(self.raw, iccp.as_mut_ptr()))?;
-            Ok(iccp.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_iccp(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     pub fn get_sbit(&self) -> Result<sys::spng_sbit, Error> {
         unsafe {
-            let mut sbit = MaybeUninit::uninit();
-            check_err(sys::spng_get_sbit(self.raw, sbit.as_mut_ptr()))?;
-            Ok(sbit.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_sbit(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
@@ -169,27 +173,27 @@ impl<R> RawContext<R> {
             use std::ptr;
             let mut len = 0;
             check_err(sys::spng_get_text(self.raw, ptr::null_mut(), &mut len))?;
-            let mut text =
+            let mut chunk =
                 vec![MaybeUninit::<sys::spng_text>::uninit().assume_init(); len as usize];
-            check_err(sys::spng_get_text(self.raw, text.as_mut_ptr(), &mut len))?;
-            Ok(mem::transmute(text))
+            check_err(sys::spng_get_text(self.raw, chunk.as_mut_ptr(), &mut len))?;
+            Ok(mem::transmute(chunk))
         }
     }
 
     pub fn get_bkgd(&self) -> Result<sys::spng_bkgd, Error> {
         unsafe {
-            let mut bkgd = MaybeUninit::uninit();
-            check_err(sys::spng_get_bkgd(self.raw, bkgd.as_mut_ptr()))?;
-            Ok(bkgd.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_bkgd(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     /// Return the physical pixel dimensions
     pub fn get_phys(&self) -> Result<sys::spng_phys, Error> {
         unsafe {
-            let mut phys = MaybeUninit::uninit();
-            check_err(sys::spng_get_phys(self.raw, phys.as_mut_ptr()))?;
-            Ok(phys.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_phys(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
@@ -201,27 +205,27 @@ impl<R> RawContext<R> {
             use std::ptr;
             let mut len = 0;
             check_err(sys::spng_get_splt(self.raw, ptr::null_mut(), &mut len))?;
-            let mut splt =
+            let mut chunk =
                 vec![MaybeUninit::<sys::spng_splt>::uninit().assume_init(); len as usize];
-            check_err(sys::spng_get_splt(self.raw, splt.as_mut_ptr(), &mut len))?;
-            Ok(mem::transmute(splt))
+            check_err(sys::spng_get_splt(self.raw, chunk.as_mut_ptr(), &mut len))?;
+            Ok(mem::transmute(chunk))
         }
     }
 
     pub fn get_time(&self) -> Result<sys::spng_time, Error> {
         unsafe {
-            let mut time = MaybeUninit::uninit();
-            check_err(sys::spng_get_time(self.raw, time.as_mut_ptr()))?;
-            Ok(time.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_time(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     /// Return the image offset
     pub fn get_offs(&self) -> Result<sys::spng_offs, Error> {
         unsafe {
-            let mut offs = MaybeUninit::uninit();
-            check_err(sys::spng_get_offs(self.raw, offs.as_mut_ptr()))?;
-            Ok(offs.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_offs(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
@@ -230,17 +234,17 @@ impl<R> RawContext<R> {
     /// Note that `exif.data` is freed when the context is destroyed.
     pub fn get_exif(&self) -> Result<sys::spng_exif, Error> {
         unsafe {
-            let mut exif = MaybeUninit::uninit();
-            check_err(sys::spng_get_exif(self.raw, exif.as_mut_ptr()))?;
-            Ok(exif.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_exif(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
     pub fn get_row_info(&self) -> Result<sys::spng_row_info, Error> {
         unsafe {
-            let mut row_info = MaybeUninit::uninit();
-            check_err(sys::spng_get_row_info(self.raw, row_info.as_mut_ptr()))?;
-            Ok(row_info.assume_init())
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_row_info(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
         }
     }
 
