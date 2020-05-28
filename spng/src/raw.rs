@@ -97,23 +97,6 @@ impl<R> RawContext<R> {
         }
     }
 
-    pub fn decoded_image_size(&self, out_format: Format) -> Result<usize, Error> {
-        let mut len = 0;
-        unsafe {
-            check_err(sys::spng_decoded_image_size(
-                self.raw,
-                out_format as _,
-                &mut len,
-            ))?;
-        }
-        Ok(len)
-    }
-
-    /// Set image width and height limits, these may not be larger than `(2^31)-1`.
-    pub fn set_image_limits(&mut self, max_width: u32, max_height: u32) -> Result<(), Error> {
-        unsafe { check_err(sys::spng_set_image_limits(self.raw, max_width, max_height)) }
-    }
-
     /// Set how chunk CRC errors should be handled for critical and ancillary chunks.
     /// ### Note
     /// Partially implemented, `SPNG_CRC_DISCARD` has no effect.
@@ -145,6 +128,11 @@ impl<R> RawContext<R> {
             ))?;
             Ok((width, height))
         }
+    }
+
+    /// Set image width and height limits, these may not be larger than `(2^31)-1`.
+    pub fn set_image_limits(&mut self, max_width: u32, max_height: u32) -> Result<(), Error> {
+        unsafe { check_err(sys::spng_set_image_limits(self.raw, max_width, max_height)) }
     }
 
     /// Get chunk size and chunk cache limits.
@@ -225,7 +213,8 @@ impl<R> RawContext<R> {
 
     /// Get the ICC profile.
     ///
-    /// *Note: ICC profiles are not validated.*
+    /// ### Note
+    /// ICC profiles are not validated.
     pub fn get_iccp(&self) -> Result<sys::spng_iccp, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -351,6 +340,7 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get the current, to-be-decoded row's information.
     pub fn get_row_info(&self) -> Result<sys::spng_row_info, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
@@ -359,33 +349,91 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Calculates decoded image buffer size for the given output format.
+    ///
+    /// PNG data must have been set prior with [`set_png_stream`] or [`set_png_buffer`].
+    ///
+    /// [`set_png_stream`]: method@RawContext::set_png_stream
+    /// [`set_png_buffer`]: method@RawContext::set_png_buffer
+    pub fn decoded_image_size(&self, out_format: Format) -> Result<usize, Error> {
+        let mut len = 0;
+        unsafe {
+            check_err(sys::spng_decoded_image_size(
+                self.raw,
+                out_format as _,
+                &mut len,
+            ))?;
+        }
+        Ok(len)
+    }
+
+    /// Decodes the PNG file and writes the image to `out`. The image is converted from any PNG format to the
+    /// destination format `out_format`. Interlaced images are deinterlaced and `16-bit` images are converted to
+    /// host-endian.
+    ///
+    /// The `out` buffer must have a length greater or equal to the size returned by [`decoded_image_size`] with
+    /// the same `out_format`.
+    ///
+    /// If the `SPNG_DECODE_PROGRESSIVE` flag is set, the context will be initialied with `out_format` for
+    /// progressive decoding. The image is not immediately decoded and the `out` buffer is ignored.
+    ///
+    /// The `SPNG_DECODE_TRNS` flag is ignored if the PNG has an alpha channel or does not contain a `TRNS`
+    /// chunk. It is also ignored for gray `1/2/4`-bit images.
+    ///
+    /// The function may only be called **once** per context.
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
+    /// [`decoded_image_size`]: method@RawContext::decoded_image_size
     pub fn decode_image(
         &mut self,
-        output: &mut [u8],
+        out: &mut [u8],
         out_format: Format,
         flags: DecodeFlags,
     ) -> Result<(), Error> {
         unsafe {
             check_err(sys::spng_decode_image(
                 self.raw,
-                output.as_mut_ptr() as _,
-                output.len(),
+                out.as_mut_ptr() as _,
+                out.len(),
                 out_format as _,
                 flags.bits,
             ))
         }
     }
 
-    pub fn decode_row(&mut self, output: &mut [u8]) -> Result<(), Error> {
+    /// Decodes and deinterlaces a scanline to `out`.
+    ///
+    /// This function requires the decoder to be initialized by calling [`decode_image`] with the
+    /// `SPNG_DECODE_PROGRESSIVE` flag set.
+    ///
+    /// The widest scanline is the decoded image size divided by `ihdr.height`.
+    ///
+    /// For the last scanline and subsequent calls the return value is `SPNG_EOI`.
+    ///
+    /// If the image is not interlaced this function's behavior is identical to [`decode_scanline`].
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
+    /// [`decode_scanline`]: method@RawContext::decode_scanline
+    pub fn decode_row(&mut self, out: &mut [u8]) -> Result<(), Error> {
         unsafe {
             check_err(sys::spng_decode_row(
                 self.raw,
-                output.as_mut_ptr() as _,
-                output.len(),
+                out.as_mut_ptr() as _,
+                out.len(),
             ))
         }
     }
 
+    /// Decodes a scanline to `out`.
+    ///
+    /// This function requires the decoder to be initialized by calling [`decode_image`] with the
+    /// `SPNG_DECODE_PROGRESSIVE` flag set.
+    ///
+    /// The widest scanline is the decoded image size divided by `ihdr.height`.
+    ///
+    /// For the last scanline and subsequent calls the return value is `SPNG_EOI`.
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
     pub fn decode_scanline(&mut self, output: &mut [u8]) -> Result<(), Error> {
         unsafe {
             check_err(sys::spng_decode_scanline(
