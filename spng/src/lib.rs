@@ -194,6 +194,33 @@ impl OutputInfo {
     }
 }
 
+impl OutputInfo {
+    fn from_ihdr_format_buffer_size(
+        ihdr: &sys::spng_ihdr,
+        output_format: Format,
+        output_buffer_size: usize,
+    ) -> Result<OutputInfo, Error> {
+        let bit_depth = match output_format {
+            Format::Png | Format::Raw => BitDepth::try_from(ihdr.bit_depth)?,
+            Format::Rgb8 | Format::Rgba8 => BitDepth::Eight,
+            Format::Rgba16 => BitDepth::Sixteen,
+        };
+        let color_type = match output_format {
+            Format::Png | Format::Raw => ColorType::try_from(ihdr.color_type)?,
+            Format::Rgb8 => ColorType::Truecolor,
+            Format::Rgba8 => ColorType::TruecolorAlpha,
+            Format::Rgba16 => ColorType::TruecolorAlpha,
+        };
+        Ok(OutputInfo {
+            bit_depth,
+            color_type,
+            width: ihdr.width,
+            height: ihdr.height,
+            buffer_size: output_buffer_size,
+        })
+    }
+}
+
 /// PNG image information
 #[derive(Debug)]
 pub struct Info {
@@ -216,39 +243,14 @@ impl Info {
             color_type: ColorType::try_from(header.color_type)?,
         })
     }
-
-    fn output_info(
-        &self,
-        output_format: Format,
-        output_buffer_size: usize,
-    ) -> Result<OutputInfo, Error> {
-        let bit_depth = match output_format {
-            Format::Png | Format::Raw => self.bit_depth,
-            Format::Rgb8 | Format::Rgba8 => BitDepth::Eight,
-            Format::Rgba16 => BitDepth::Sixteen,
-        };
-        let color_type = match output_format {
-            Format::Png | Format::Raw => self.color_type,
-            Format::Rgb8 => ColorType::Truecolor,
-            Format::Rgba8 => ColorType::TruecolorAlpha,
-            Format::Rgba16 => ColorType::TruecolorAlpha,
-        };
-        Ok(OutputInfo {
-            bit_depth,
-            color_type,
-            width: self.width,
-            height: self.height,
-            buffer_size: output_buffer_size,
-        })
-    }
 }
 
 #[derive(Debug)]
 /// PNG reader
 pub struct Reader<R> {
     ctx: RawContext<R>,
+    ihdr: sys::spng_ihdr,
     out_format: Format,
-    info: Info,
     decode_flags: DecodeFlags,
     output_buffer_size: usize,
 }
@@ -316,52 +318,58 @@ impl<R> Decoder<R> {
         let mut ctx = RawContext::with_flags(self.context_flags)?;
         ctx.set_image_limits(self.limits.max_width, self.limits.max_height)?;
         ctx.set_png_stream(self.reader)?;
-        let header = ctx.get_ihdr()?;
+        let ihdr = ctx.get_ihdr()?;
         let output_buffer_size = ctx.decoded_image_size(self.output_format)?;
-        let info = Info::from_ihdr(&header)?;
-        let out_info = info.output_info(self.output_format, output_buffer_size)?;
+        let output_info = OutputInfo::from_ihdr_format_buffer_size(
+            &ihdr,
+            self.output_format,
+            output_buffer_size,
+        )?;
         let reader = Reader {
             ctx,
+            ihdr,
             out_format: self.output_format,
-            info,
             decode_flags: self.decode_flags,
             output_buffer_size,
         };
 
-        Ok((out_info, reader))
+        Ok((output_info, reader))
     }
 }
 
 impl<'a> Decoder<&'a [u8]> {
     /// Read the `png` header and initialize decoding.
     ///
-    /// Like [`read_info`] but prevents extra copies when the `png` data is already in memory.
+    /// Like [`read_info`] but reduces extra copies when the `png` data is already in memory.
     ///
     /// [`read_info`]: method@Decoder::read_info
     pub fn read_info_from_slice(self) -> Result<(OutputInfo, Reader<&'a [u8]>), Error> {
         let mut ctx = RawContext::with_flags(self.context_flags)?;
         ctx.set_image_limits(self.limits.max_width, self.limits.max_height)?;
         ctx.set_png_buffer(self.reader)?;
-        let header = ctx.get_ihdr()?;
+        let ihdr = ctx.get_ihdr()?;
         let output_buffer_size = ctx.decoded_image_size(self.output_format)?;
-        let info = Info::from_ihdr(&header)?;
-        let out_info = info.output_info(self.output_format, output_buffer_size)?;
+        let output_info = OutputInfo::from_ihdr_format_buffer_size(
+            &ihdr,
+            self.output_format,
+            output_buffer_size,
+        )?;
         let reader = Reader {
             ctx,
+            ihdr,
             out_format: self.output_format,
-            info,
             decode_flags: self.decode_flags,
             output_buffer_size,
         };
 
-        Ok((out_info, reader))
+        Ok((output_info, reader))
     }
 }
 
 impl<R> Reader<R> {
     /// Returns input information
-    pub fn info(&self) -> &Info {
-        &self.info
+    pub fn info(&self) -> Info {
+        Info::from_ihdr(&self.ihdr).expect("invalid ihdr")
     }
 
     /// Returns the minimum buffer size required for `next_frame`
@@ -374,4 +382,19 @@ impl<R> Reader<R> {
         self.ctx
             .decode_image(output, self.out_format, self.decode_flags)
     }
+}
+
+pub fn decode<R: io::Read>(
+    reader: R,
+    output_format: Format,
+) -> Result<(OutputInfo, Vec<u8>), Error> {
+    let decoder = Decoder::new(reader).with_output_format(output_format);
+    let (out_info, mut reader) = decoder.read_info()?;
+    let mut out = Vec::new();
+    out.reserve_exact(out_info.buffer_size);
+    unsafe {
+        out.set_len(out_info.buffer_size);
+    }
+    reader.next_frame(&mut out)?;
+    Ok((out_info, out))
 }

@@ -4,7 +4,7 @@ use crate::{
 };
 
 use spng_sys as sys;
-use std::{io, mem, mem::MaybeUninit, slice};
+use std::{ffi::CStr, io, marker::PhantomData, mem, mem::MaybeUninit, slice};
 
 unsafe extern "C" fn read_fn<R: io::Read>(
     _: *mut sys::spng_ctx,
@@ -167,11 +167,11 @@ impl<R> RawContext<R> {
     }
 
     /// Get the image palette.
-    pub fn get_plte(&self) -> Result<sys::spng_plte, Error> {
+    pub fn get_plte(&self) -> Result<Plte, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_plte(self.raw, chunk.as_mut_ptr()))?;
-            Ok(chunk.assume_init())
+            Ok(Plte(chunk.assume_init()))
         }
     }
 
@@ -215,11 +215,12 @@ impl<R> RawContext<R> {
     ///
     /// ### Note
     /// ICC profiles are not validated.
-    pub fn get_iccp(&self) -> Result<sys::spng_iccp, Error> {
+    pub fn get_iccp(&self) -> Result<Ref<Iccp>, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_iccp(self.raw, chunk.as_mut_ptr()))?;
-            Ok(chunk.assume_init())
+            let chunk: Iccp = mem::transmute(chunk.assume_init());
+            Ok(Ref::from(chunk))
         }
     }
 
@@ -251,7 +252,7 @@ impl<R> RawContext<R> {
     /// Text data is freed after the context is dropped.
     ///
     /// [`decode_image`]: method@RawContext::decode_image
-    pub fn get_text(&self) -> Result<Vec<sys::spng_text>, Error> {
+    pub fn get_text(&self) -> Result<Ref<Vec<Text>>, Error> {
         unsafe {
             use std::ptr;
             let mut len = 0;
@@ -259,7 +260,8 @@ impl<R> RawContext<R> {
             let mut chunk =
                 vec![MaybeUninit::<sys::spng_text>::uninit().assume_init(); len as usize];
             check_err(sys::spng_get_text(self.raw, chunk.as_mut_ptr(), &mut len))?;
-            Ok(chunk)
+            let chunk: Vec<Text> = mem::transmute(chunk);
+            Ok(Ref::from(chunk))
         }
     }
 
@@ -287,7 +289,7 @@ impl<R> RawContext<R> {
     /// Suggested palettes are freed when the context is dropped.
     ///
     /// [`decode_image`]: method@RawContext::decode_image
-    pub fn get_splt(&self) -> Result<Vec<sys::spng_splt>, Error> {
+    pub fn get_splt(&self) -> Result<Ref<Vec<Splt>>, Error> {
         unsafe {
             use std::ptr;
             let mut len = 0;
@@ -295,7 +297,8 @@ impl<R> RawContext<R> {
             let mut chunk =
                 vec![MaybeUninit::<sys::spng_splt>::uninit().assume_init(); len as usize];
             check_err(sys::spng_get_splt(self.raw, chunk.as_mut_ptr(), &mut len))?;
-            Ok(mem::transmute(chunk))
+            let chunk: Vec<Splt> = mem::transmute(chunk);
+            Ok(Ref::from(chunk))
         }
     }
 
@@ -332,11 +335,12 @@ impl<R> RawContext<R> {
     /// `exif.data` is freed when the context is dropped.
     ///
     /// [`decode_image`]: method@RawContext::decode_image
-    pub fn get_exif(&self) -> Result<sys::spng_exif, Error> {
+    pub fn get_exif(&self) -> Result<Ref<Exif>, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_exif(self.raw, chunk.as_mut_ptr()))?;
-            Ok(chunk.assume_init())
+            let chunk: Exif = mem::transmute(chunk.assume_init());
+            Ok(Ref::from(chunk))
         }
     }
 
@@ -466,5 +470,119 @@ impl<'a> RawContext<&'a [u8]> {
                 buf.len(),
             ))
         }
+    }
+}
+
+/// An owned reference.
+///
+/// Attaches lifetime `'a` to `T`.
+pub struct Ref<'a, T: 'a> {
+    data: T,
+    _p: PhantomData<&'a ()>,
+}
+
+impl<'a, T: 'a> std::ops::Deref for Ref<'a, T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl<'a, T: 'a> From<T> for Ref<'a, T> {
+    fn from(t: T) -> Ref<'a, T> {
+        Ref {
+            data: t,
+            _p: PhantomData,
+        }
+    }
+}
+
+/// Safe wrapper for [`spng_sys::spng_splt`]
+#[repr(C)]
+pub struct Splt(sys::spng_splt);
+
+impl Splt {
+    pub fn name(&self) -> Result<&str, std::str::Utf8Error> {
+        unsafe { CStr::from_ptr(self.0.name.as_ptr() as _).to_str() }
+    }
+
+    pub fn sample_depth(&self) -> u8 {
+        self.0.sample_depth
+    }
+
+    pub fn entries(&self) -> &[sys::spng_splt_entry] {
+        unsafe { slice::from_raw_parts(self.0.entries, self.0.n_entries as usize) }
+    }
+}
+
+/// Safe wrapper for [`spng_sys::spng_plte`]
+#[repr(C)]
+pub struct Plte(sys::spng_plte);
+
+impl Plte {
+    pub fn entries(&self) -> &[sys::spng_plte_entry] {
+        unsafe { slice::from_raw_parts(self.0.entries.as_ptr(), self.0.n_entries as usize) }
+    }
+}
+
+/// Safe wrapper for [`spng_sys::spng_exif`]
+#[repr(C)]
+pub struct Exif(sys::spng_exif);
+
+impl Exif {
+    pub fn data(&self) -> &[u8] {
+        unsafe { slice::from_raw_parts(self.0.data as _, self.0.length as usize) }
+    }
+}
+
+/// Safe wrapper for [`spng_sys::spng_text`]
+#[repr(C)]
+pub struct Text(sys::spng_text);
+
+impl Text {
+    pub fn keyword(&self) -> Result<&str, std::str::Utf8Error> {
+        unsafe { CStr::from_ptr(self.0.keyword.as_ptr() as _).to_str() }
+    }
+
+    pub fn type_(&self) -> i32 {
+        self.0.type_
+    }
+
+    pub fn length(&self) -> usize {
+        self.0.length
+    }
+
+    pub fn text(&self) -> Result<&str, std::str::Utf8Error> {
+        unsafe { CStr::from_ptr(self.0.text).to_str() }
+    }
+
+    pub fn compression_flag(&self) -> u8 {
+        self.0.compression_flag
+    }
+
+    pub fn compression_method(&self) -> u8 {
+        self.0.compression_method
+    }
+
+    pub fn language_tag(&self) -> Result<&str, std::str::Utf8Error> {
+        unsafe { CStr::from_ptr(self.0.language_tag).to_str() }
+    }
+
+    pub fn translated_keyword(&self) -> Result<&str, std::str::Utf8Error> {
+        unsafe { CStr::from_ptr(self.0.translated_keyword).to_str() }
+    }
+}
+
+/// Safe wrapper for [`spng_sys::spng_iccp`]
+#[repr(C)]
+pub struct Iccp(sys::spng_iccp);
+
+impl Iccp {
+    pub fn profile_name(&self) -> Result<&str, std::str::Utf8Error> {
+        unsafe { CStr::from_ptr(self.0.profile_name.as_ptr()).to_str() }
+    }
+
+    pub fn profile(&self) -> &[u8] {
+        unsafe { slice::from_raw_parts(self.0.profile as _, self.0.profile_len as usize) }
     }
 }

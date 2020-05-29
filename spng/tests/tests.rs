@@ -131,3 +131,14 @@ fn decode_002_from_slice() -> Result<(), Box<dyn std::error::Error>> {
     reader.next_frame(&mut out)?;
     Ok(())
 }
+
+#[test]
+fn decode() -> Result<(), Box<dyn std::error::Error>> {
+    let (out_info, out) = spng::decode(TEST_PNG_001, spng::Format::Png)?;
+    assert_eq!(300, out_info.width);
+    assert_eq!(300, out_info.height);
+    assert_eq!(8, out_info.bit_depth as u8);
+    assert_eq!(4, out_info.color_type.samples());
+    assert_eq!(out_info.buffer_size, out.len());
+    Ok(())
+}
