@@ -257,11 +257,12 @@ impl<R> RawContext<R> {
             use std::ptr;
             let mut len = 0;
             check_err(sys::spng_get_text(self.raw, ptr::null_mut(), &mut len))?;
-            let mut chunk =
-                vec![MaybeUninit::<sys::spng_text>::uninit().assume_init(); len as usize];
-            check_err(sys::spng_get_text(self.raw, chunk.as_mut_ptr(), &mut len))?;
-            let chunk: Vec<Text> = mem::transmute(chunk);
-            Ok(Ref::from(chunk))
+            let mut vec = Vec::<Text>::new();
+            vec.reserve_exact(len as usize);
+            vec.set_len(len as usize);
+            let text_ptr = vec.as_mut_ptr() as *mut sys::spng_text;
+            check_err(sys::spng_get_text(self.raw, text_ptr, &mut len))?;
+            Ok(Ref::from(vec))
         }
     }
 
@@ -294,11 +295,12 @@ impl<R> RawContext<R> {
             use std::ptr;
             let mut len = 0;
             check_err(sys::spng_get_splt(self.raw, ptr::null_mut(), &mut len))?;
-            let mut chunk =
-                vec![MaybeUninit::<sys::spng_splt>::uninit().assume_init(); len as usize];
-            check_err(sys::spng_get_splt(self.raw, chunk.as_mut_ptr(), &mut len))?;
-            let chunk: Vec<Splt> = mem::transmute(chunk);
-            Ok(Ref::from(chunk))
+            let mut vec = Vec::<Splt>::new();
+            vec.reserve_exact(len as usize);
+            vec.set_len(len as usize);
+            let splt_ptr = vec.as_mut_ptr() as *mut sys::spng_splt;
+            check_err(sys::spng_get_splt(self.raw, splt_ptr, &mut len))?;
+            Ok(Ref::from(vec))
         }
     }
 
