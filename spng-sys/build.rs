@@ -6,7 +6,9 @@ fn main() {
     if let Some(libz_include) = env::var_os("DEP_Z_INCLUDE") {
         build.include(libz_include);
     }
-    if cfg!(target_feature = "ssse3") {
+    if cfg!(target_feature = "sse4.1") {
+        build.define("SPNG_SSE", Some("4"));
+    } else if cfg!(target_feature = "ssse3") {
         build.define("SPNG_SSE", Some("3"));
     }
     build.compile("spng");

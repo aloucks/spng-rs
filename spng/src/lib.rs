@@ -68,6 +68,13 @@ pub enum ColorType {
     TruecolorAlpha = sys::spng_color_type_SPNG_COLOR_TYPE_TRUECOLOR_ALPHA as u8,
 }
 
+impl ColorType {
+    /// Alias for `Truecolor`
+    pub const RGB: ColorType = ColorType::Truecolor;
+    /// Alias for `TruecolorAlpha`
+    pub const RGBA: ColorType = ColorType::TruecolorAlpha;
+}
+
 impl TryFrom<u8> for ColorType {
     type Error = Error;
     fn try_from(value: u8) -> Result<ColorType, Error> {
@@ -337,35 +344,6 @@ impl<R> Decoder<R> {
     }
 }
 
-impl<'a> Decoder<&'a [u8]> {
-    /// Read the `png` header and initialize decoding.
-    ///
-    /// Like [`read_info`] but reduces extra copies when the `png` data is already in memory.
-    ///
-    /// [`read_info`]: method@Decoder::read_info
-    pub fn read_info_from_slice(self) -> Result<(OutputInfo, Reader<&'a [u8]>), Error> {
-        let mut ctx = RawContext::with_flags(self.context_flags)?;
-        ctx.set_image_limits(self.limits.max_width, self.limits.max_height)?;
-        ctx.set_png_buffer(self.reader)?;
-        let ihdr = ctx.get_ihdr()?;
-        let output_buffer_size = ctx.decoded_image_size(self.output_format)?;
-        let output_info = OutputInfo::from_ihdr_format_buffer_size(
-            &ihdr,
-            self.output_format,
-            output_buffer_size,
-        )?;
-        let reader = Reader {
-            ctx,
-            ihdr,
-            out_format: self.output_format,
-            decode_flags: self.decode_flags,
-            output_buffer_size,
-        };
-
-        Ok((output_info, reader))
-    }
-}
-
 impl<R> Reader<R> {
     /// Returns input information
     pub fn info(&self) -> Info {
@@ -384,10 +362,11 @@ impl<R> Reader<R> {
     }
 }
 
-pub fn decode<R: io::Read>(
-    reader: R,
-    output_format: Format,
-) -> Result<(OutputInfo, Vec<u8>), Error> {
+/// Decode `png` data.
+pub fn decode<R>(reader: R, output_format: Format) -> Result<(OutputInfo, Vec<u8>), Error>
+where
+    R: io::Read,
+{
     let decoder = Decoder::new(reader).with_output_format(output_format);
     let (out_info, mut reader) = decoder.read_info()?;
     let mut out = Vec::new();
