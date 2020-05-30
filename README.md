@@ -10,25 +10,70 @@ Rust bindings to [libspng].
 
 | crate    | spng-rs  | libspng |
 | -------- | -------- | ------- |
-| spng     |  `0.1.0-alpha.3` | `master` (rev = [2079ef6]) |
-| spng-sys |  `0.1.0-alpha.3` | `master` (rev = [2079ef6]) |
+| spng     |  `0.1.0-alpha.4` | `master` (rev = [f47ed26]) |
+| spng-sys |  `0.1.0-alpha.4` | `master` (rev = [f47ed26]) |
 
-## Example
+## Performance
+
+This [test image] is decoded 4.6x faster than with the [png] crate.
+
+```
+png_decode              time:   [3.1058 ms 3.1210 ms 3.1378 ms]
+spng_decode             time:   [664.97 us 667.60 us 670.38 us]
+```
+
+## Examples
+
+A one-liner for simple use cases:
 
 ```rust
-let cursor = std::io::Cursor::new(TEST_PNG);
-let decoder = spng::Decoder::new(cursor);
-let (out_info, mut reader) = decoder.read_info()?;
-let output_buffer_size = reader.output_buffer_size();
+let file = File::open("image.png")?;
+let (out_info, data) = spng::decode(file, spng::Format::Rgba8)?;
+
 assert_eq!(300, out_info.width);
 assert_eq!(300, out_info.height);
 assert_eq!(8, out_info.bit_depth);
 assert_eq!(4, out_info.color_type.samples());
 assert_eq!(out_info.buffer_size, output_buffer_size);
-let mut out = vec![0; output_buffer_size];
-reader.next_frame(&mut out)?;
 ```
 
-[libspng]: https://libspng.org
+The `Decoder` interface is modeled after the [png] crate:
 
-[2079ef6]: https://github.com/randy408/libspng/tree/2079ef6f223feea2570b537c047c9140a5b72551
+```rust
+let file = File::open("image.png")?;
+let decoder = spng::Decoder::new(file)
+    .with_output_format(spng::Format::Rgba8);
+let (out_info, mut reader) = decoder.read_info()?;
+let out_buffer_size = reader.output_buffer_size();
+let mut data = vec![0; out_buffer_size];
+reader.next_frame(&mut data)?;
+
+assert_eq!(300, out_info.width);
+assert_eq!(300, out_info.height);
+assert_eq!(8, out_info.bit_depth);
+assert_eq!(4, out_info.color_type.samples());
+assert_eq!(out_info.buffer_size, out_buffer_size);
+```
+
+The `RawContext` interface is a safe and minimal wrapper over the full [libspng] `C` API.
+
+```rust
+let file = File::open("image.png")?;
+let out_format = spng::Format::Rgba8;
+let mut ctx = spng::raw::RawContext::new()?;
+ctx.set_png_stream(file)?;
+let ihdr = ctx.get_ihdr()?;
+let out_buffer_size = ctx.decoded_image_size(out_format)?;
+let mut data = vec![0; out_buffer_size];
+ctx.decode_image(&mut data, out_format, spng::DecodeFlags::empty())?;
+
+assert_eq!(300, ihdr.width);
+assert_eq!(300, ihdr.height);
+assert_eq!(8, ihdr.bit_depth);
+assert_eq!(4, spng::ColorType::try_from(ihdr.color_type)?.samples());
+```
+
+[png]: https://crates.io/crates/png
+[libspng]: https://libspng.org
+[f47ed26]: https://github.com/randy408/libspng/tree/f47ed26
+[test image]: spng/tests/test-002.png

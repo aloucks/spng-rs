@@ -112,3 +112,20 @@ fn decode() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(out_info.buffer_size, out.len());
     Ok(())
 }
+
+#[test]
+fn decode_001_raw_context() -> Result<(), Box<dyn std::error::Error>> {
+    use std::convert::TryFrom;
+    let out_format = spng::Format::Rgba8;
+    let mut ctx = spng::raw::RawContext::new()?;
+    ctx.set_png_stream(TEST_PNG_001)?;
+    let ihdr = ctx.get_ihdr()?;
+    assert_eq!(300, ihdr.width);
+    assert_eq!(300, ihdr.height);
+    assert_eq!(8, ihdr.bit_depth);
+    assert_eq!(4, spng::ColorType::try_from(ihdr.color_type)?.samples());
+    let buffer_size = ctx.decoded_image_size(out_format)?;
+    let mut data = vec![0; buffer_size];
+    ctx.decode_image(&mut data, out_format, spng::DecodeFlags::empty())?;
+    Ok(())
+}
