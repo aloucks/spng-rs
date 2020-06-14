@@ -134,8 +134,11 @@ pub type spng_interlace_method = i32;
 pub const spng_format_SPNG_FMT_RGBA8: spng_format = 1;
 pub const spng_format_SPNG_FMT_RGBA16: spng_format = 2;
 pub const spng_format_SPNG_FMT_RGB8: spng_format = 4;
-pub const spng_format_SPNG_FMT_PNG: spng_format = 16;
-pub const spng_format_SPNG_FMT_RAW: spng_format = 32;
+pub const spng_format_SPNG_FMT_GA8: spng_format = 16;
+pub const spng_format_SPNG_FMT_GA16: spng_format = 32;
+pub const spng_format_SPNG_FMT_G8: spng_format = 64;
+pub const spng_format_SPNG_FMT_PNG: spng_format = 256;
+pub const spng_format_SPNG_FMT_RAW: spng_format = 512;
 pub type spng_format = i32;
 pub const spng_ctx_flags_SPNG_CTX_IGNORE_ADLER32: spng_ctx_flags = 1;
 pub type spng_ctx_flags = i32;
@@ -1632,7 +1635,7 @@ extern "C" {
 extern "C" {
     pub fn spng_decode_image(
         ctx: *mut spng_ctx,
-        out: *mut libc::c_uchar,
+        out: *mut libc::c_void,
         len: usize,
         fmt: libc::c_int,
         flags: libc::c_int,
@@ -1641,12 +1644,12 @@ extern "C" {
 extern "C" {
     pub fn spng_decode_scanline(
         ctx: *mut spng_ctx,
-        out: *mut libc::c_uchar,
+        out: *mut libc::c_void,
         len: usize,
     ) -> libc::c_int;
 }
 extern "C" {
-    pub fn spng_decode_row(ctx: *mut spng_ctx, out: *mut libc::c_uchar, len: usize) -> libc::c_int;
+    pub fn spng_decode_row(ctx: *mut spng_ctx, out: *mut libc::c_void, len: usize) -> libc::c_int;
 }
 extern "C" {
     pub fn spng_get_row_info(ctx: *mut spng_ctx, row_info: *mut spng_row_info) -> libc::c_int;

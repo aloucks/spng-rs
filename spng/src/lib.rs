@@ -50,6 +50,9 @@ pub enum Format {
     Rgba8 = sys::spng_format_SPNG_FMT_RGBA8,
     Rgba16 = sys::spng_format_SPNG_FMT_RGBA16,
     Rgb8 = sys::spng_format_SPNG_FMT_RGB8,
+    G8 = sys::spng_format_SPNG_FMT_G8,
+    GA8 = sys::spng_format_SPNG_FMT_GA8,
+    GA16 = sys::spng_format_SPNG_FMT_GA16,
     /// The PNG's format in host-endian
     Png = sys::spng_format_SPNG_FMT_PNG,
     /// The PNG's format in big-endian
@@ -73,6 +76,10 @@ impl ColorType {
     pub const RGB: ColorType = ColorType::Truecolor;
     /// Alias for `TruecolorAlpha`
     pub const RGBA: ColorType = ColorType::TruecolorAlpha;
+    /// Alias for `Grayscale`
+    pub const G: ColorType = ColorType::Grayscale;
+    /// Alias for `GrayscaleAlpha`
+    pub const GA: ColorType = ColorType::GrayscaleAlpha;
 }
 
 impl TryFrom<u8> for ColorType {
@@ -209,14 +216,16 @@ impl OutputInfo {
     ) -> Result<OutputInfo, Error> {
         let bit_depth = match output_format {
             Format::Png | Format::Raw => BitDepth::try_from(ihdr.bit_depth)?,
-            Format::Rgb8 | Format::Rgba8 => BitDepth::Eight,
-            Format::Rgba16 => BitDepth::Sixteen,
+            Format::Rgb8 | Format::Rgba8 | Format::G8 | Format::GA8 => BitDepth::Eight,
+            Format::Rgba16 | Format::GA16 => BitDepth::Sixteen,
         };
         let color_type = match output_format {
             Format::Png | Format::Raw => ColorType::try_from(ihdr.color_type)?,
             Format::Rgb8 => ColorType::Truecolor,
             Format::Rgba8 => ColorType::TruecolorAlpha,
             Format::Rgba16 => ColorType::TruecolorAlpha,
+            Format::G8 => ColorType::Grayscale,
+            Format::GA8 | Format::GA16 => ColorType::GrayscaleAlpha,
         };
         Ok(OutputInfo {
             bit_depth,

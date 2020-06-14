@@ -10,8 +10,8 @@ Rust bindings to [libspng].
 
 | crate    | spng-rs  | libspng |
 | -------- | -------- | ------- |
-| spng     |  `0.1.0-alpha.4` | `master` (rev = [f47ed26]) |
-| spng-sys |  `0.1.0-alpha.4` | `master` (rev = [f47ed26]) |
+| spng     |  `0.1.0-alpha.5` | `master` ([rev]) |
+| spng-sys |  `0.1.0-alpha.5` | `master` ([rev]) |
 
 ## Performance
 
@@ -75,5 +75,5 @@ assert_eq!(4, spng::ColorType::try_from(ihdr.color_type)?.samples());
 
 [png]: https://crates.io/crates/png
 [libspng]: https://libspng.org
-[f47ed26]: https://github.com/randy408/libspng/tree/f47ed26
+[rev]: https://github.com/randy408/libspng/tree/71a71a6713bac13bc359d741cbafd713c790e294
 [test image]: spng/tests/test-002.png

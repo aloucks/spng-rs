@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2020-06-14
+### Changed
+- Update libspng to 71a71a6
+### Added
+- Grayscale output formats
+
+## [0.1.0-alpha.4] - 2020-05-29
+### Added
+- Expose the `RawContext` API
+- Add `spng::decode` for simple use cases
+### Changed
+- Update libspng to f47ed26
+### Added
+- Detect CPU target features and enable corresponding options in libspng
+
 ## [0.1.0-alpha.3] - 2020-03-13
 
 ## [0.1.0-alpha+2] - 2020-03-13
