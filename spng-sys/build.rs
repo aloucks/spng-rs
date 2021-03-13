@@ -13,5 +13,5 @@ fn main() {
     }
     build.compile("spng");
 
-    println!("cargo:rustc-link-lib=z");
+    println!("cargo:rustc-link-lib=static=z");
 }

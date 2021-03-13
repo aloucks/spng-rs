@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 description = "Native bindings to libspng"
 
 [dependencies]
-libz-sys = { version = "1.1.2", optional = true, default-features = false, features = ["libc"] }
+libz-sys = { version = "1.1.2", optional = true, default-features = false, features = ["libc", "static", "zlib-ng"] }
 libc = "0.2"
 
 [build-dependencies]
