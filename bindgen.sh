@@ -7,4 +7,5 @@ bindgen -o spng-sys/src/ffi.rs \
  --impl-debug \
  --impl-partialeq \
  --size_t-is-usize \
+ --opaque-type FILE \
  spng-sys/libspng/spng/spng.h
