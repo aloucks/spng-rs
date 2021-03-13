@@ -88,7 +88,7 @@ impl<R> RawContext<R> {
 
     pub fn with_flags(flags: ContextFlags) -> Result<RawContext<R>, Error> {
         unsafe {
-            let raw = sys::spng_ctx_new(flags.bits());
+            let raw = sys::spng_ctx_new(flags.bits() as _);
             if raw.is_null() {
                 Err(Error::Mem)
             } else {
@@ -98,8 +98,6 @@ impl<R> RawContext<R> {
     }
 
     /// Set how chunk CRC errors should be handled for critical and ancillary chunks.
-    /// ### Note
-    /// Partially implemented, `SPNG_CRC_DISCARD` has no effect.
     pub fn set_crc_action(
         &mut self,
         critical: CrcAction,
@@ -402,7 +400,7 @@ impl<R> RawContext<R> {
                 out.as_mut_ptr() as _,
                 out.len(),
                 out_format as _,
-                flags.bits,
+                flags.bits as _,
             ))
         }
     }

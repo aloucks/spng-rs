@@ -1,6 +1,6 @@
 [package]
 name = "spng-sys"
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 authors = ["Aaron Loucks <aloucks@cofront.net>"]
 edition = "2018"
 keywords = ["spng", "png", "image", "decoder"]
@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 description = "Native bindings to libspng"
 
 [dependencies]
-libz-sys = "1.0"
+libz-sys = { version = "1.1.0", default-features = false, features = ["libc"] }
 libc = "0.2"
 
 [build-dependencies]

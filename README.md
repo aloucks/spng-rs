@@ -75,5 +75,5 @@ assert_eq!(4, spng::ColorType::try_from(ihdr.color_type)?.samples());
 
 [png]: https://crates.io/crates/png
 [libspng]: https://libspng.org
-[rev]: https://github.com/randy408/libspng/tree/71a71a6713bac13bc359d741cbafd713c790e294
+[rev]: https://github.com/randy408/libspng/tree/264476a1521bcb1d526c05ece0ed68b855fcfc4c
 [test image]: spng/tests/test-002.png
