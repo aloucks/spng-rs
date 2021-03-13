@@ -14,3 +14,7 @@ readme = "../README.md"
 spng-sys = { version = "0.1.0-alpha", path = "../spng-sys" }
 bitflags = "1.0"
 libc = "0.2"
+
+[features]
+default = []
+zlib-ng = ["spng-sys/zlib-ng"]
