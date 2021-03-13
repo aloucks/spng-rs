@@ -17,4 +17,4 @@ libc = "0.2"
 
 [features]
 default = ["spng-sys/libz-sys"]
-cloudflare_zlib = ["spng-sys/cloudflare-zlib-sys"]
+cloudflare-zlib = ["spng-sys/cloudflare-zlib-sys"]
