@@ -13,7 +13,5 @@ fn main() {
     }
     build.compile("spng");
 
-    if cfg!(feature = "libz-sys") {
-        println!("cargo:rustc-link-lib=z");
-    }
+    println!("cargo:rustc-link-lib=z");
 }

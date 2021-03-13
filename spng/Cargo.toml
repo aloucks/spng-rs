@@ -11,10 +11,6 @@ description = "Rust bindings to libspng"
 readme = "../README.md"
 
 [dependencies]
-spng-sys = { version = "0.1.0-alpha", path = "../spng-sys", default-features = false }
+spng-sys = { version = "0.1.0-alpha", path = "../spng-sys" }
 bitflags = "1.0"
 libc = "0.2"
-
-[features]
-default = ["spng-sys/libz-sys"]
-cloudflare-zlib = ["spng-sys/cloudflare-zlib-sys"]
