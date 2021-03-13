@@ -12,6 +12,4 @@ fn main() {
         build.define("SPNG_SSE", Some("3"));
     }
     build.compile("spng");
-
-    println!("cargo:rustc-link-lib=static=z");
 }
