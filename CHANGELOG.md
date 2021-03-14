@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.6] - 2021-03-14
+### Changed
+- Update libspng to 264476a
+- Now zlib is linked to statically
+- Added `zlib-ng` crate feature to opt-in to `zlib-ng`, a fork of zlib with better performance
+
+### Fixed
+- Now the `DEP_SPNG_INCLUDE` environment variable is correctly set to the include directory that contains libspng headers
+
 ## [0.1.0-alpha.5] - 2020-06-14
 ### Changed
 - Update libspng to 71a71a6
