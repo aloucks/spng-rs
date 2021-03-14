@@ -1,4 +1,4 @@
-use spng::Decoder;
+use spng::{raw::ChunkAvail, Decoder};
 use std::io::Cursor;
 
 static TEST_PNG_001: &[u8] = include_bytes!("test-001.png");
@@ -127,5 +127,11 @@ fn decode_001_raw_context() -> Result<(), Box<dyn std::error::Error>> {
     let buffer_size = ctx.decoded_image_size(out_format)?;
     let mut data = vec![0; buffer_size];
     ctx.decode_image(&mut data, out_format, spng::DecodeFlags::empty())?;
+    let text = ctx
+        .get_text()
+        .chunk_avail()?
+        .expect("text chunk in test image");
+    let text_str = text[0].text()?;
+    assert_eq!("Created with GIMP", text_str);
     Ok(())
 }

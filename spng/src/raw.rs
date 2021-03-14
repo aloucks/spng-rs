@@ -1,10 +1,14 @@
+//! Raw decoding context
+
 use crate::{
     error::{check_err, Error},
     ContextFlags, CrcAction, DecodeFlags, Format,
 };
 
+use self::chunk::*;
+
 use spng_sys as sys;
-use std::{ffi::CStr, io, marker::PhantomData, mem, mem::MaybeUninit, slice};
+use std::{io, marker::PhantomData, mem, mem::MaybeUninit, slice};
 
 unsafe extern "C" fn read_fn<R: io::Read>(
     _: *mut sys::spng_ctx,
@@ -46,13 +50,13 @@ unsafe extern "C" fn read_fn<R: io::Read>(
 /// * TIME
 /// * TRNS
 /// * ZTXT
-pub trait IfPresent<T> {
+pub trait ChunkAvail<T> {
     /// Converts `Err(Error::Chunkavail)` into `Ok(None)`.
-    fn if_present(self) -> Result<Option<T>, Error>;
+    fn chunk_avail(self) -> Result<Option<T>, Error>;
 }
 
-impl<T> IfPresent<T> for Result<T, Error> {
-    fn if_present(self) -> Result<Option<T>, Error> {
+impl<T> ChunkAvail<T> for Result<T, Error> {
+    fn chunk_avail(self) -> Result<Option<T>, Error> {
         match self {
             Ok(value) => Ok(Some(value)),
             Err(Error::Chunkavail) => Ok(None),
@@ -156,7 +160,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get the image header.
-    pub fn get_ihdr(&self) -> Result<sys::spng_ihdr, Error> {
+    pub fn get_ihdr(&self) -> Result<Ihdr, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_ihdr(self.raw, chunk.as_mut_ptr()))?;
@@ -165,16 +169,16 @@ impl<R> RawContext<R> {
     }
 
     /// Get the image palette.
-    pub fn get_plte(&self) -> Result<Plte, Error> {
+    pub fn get_plte(&self) -> Result<Ref<Plte>, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_plte(self.raw, chunk.as_mut_ptr()))?;
-            Ok(Plte(chunk.assume_init()))
+            Ok(Ref::from(Plte(chunk.assume_init())))
         }
     }
 
     /// Get the image transparency.
-    pub fn get_trns(&self) -> Result<sys::spng_trns, Error> {
+    pub fn get_trns(&self) -> Result<Trns, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_trns(self.raw, chunk.as_mut_ptr()))?;
@@ -183,7 +187,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get primary chromacities and white point as floating point numbers.
-    pub fn get_chrm(&self) -> Result<sys::spng_chrm, Error> {
+    pub fn get_chrm(&self) -> Result<Chrm, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_chrm(self.raw, chunk.as_mut_ptr()))?;
@@ -192,7 +196,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get primary chromacities and white point in the PNG's internal representation.
-    pub fn get_chrm_int(&self) -> Result<sys::spng_chrm_int, Error> {
+    pub fn get_chrm_int(&self) -> Result<ChrmInt, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_chrm_int(self.raw, chunk.as_mut_ptr()))?;
@@ -223,7 +227,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get the significant bits.
-    pub fn get_sbit(&self) -> Result<sys::spng_sbit, Error> {
+    pub fn get_sbit(&self) -> Result<Sbit, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_sbit(self.raw, chunk.as_mut_ptr()))?;
@@ -265,7 +269,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get the image background color.
-    pub fn get_bkgd(&self) -> Result<sys::spng_bkgd, Error> {
+    pub fn get_bkgd(&self) -> Result<Bkgd, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_bkgd(self.raw, chunk.as_mut_ptr()))?;
@@ -274,7 +278,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get physical pixel dimensions.
-    pub fn get_phys(&self) -> Result<sys::spng_phys, Error> {
+    pub fn get_phys(&self) -> Result<Phys, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_phys(self.raw, chunk.as_mut_ptr()))?;
@@ -308,7 +312,7 @@ impl<R> RawContext<R> {
     /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
     ///
     /// [`decode_image`]: method@RawContext::decode_image
-    pub fn get_time(&self) -> Result<sys::spng_time, Error> {
+    pub fn get_time(&self) -> Result<Time, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_time(self.raw, chunk.as_mut_ptr()))?;
@@ -317,7 +321,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get the image offset.
-    pub fn get_offs(&self) -> Result<sys::spng_offs, Error> {
+    pub fn get_offs(&self) -> Result<Offs, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_offs(self.raw, chunk.as_mut_ptr()))?;
@@ -345,7 +349,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get the current, to-be-decoded row's information.
-    pub fn get_row_info(&self) -> Result<sys::spng_row_info, Error> {
+    pub fn get_row_info(&self) -> Result<RowInfo, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_row_info(self.raw, chunk.as_mut_ptr()))?;
@@ -497,92 +501,121 @@ impl<'a, T: 'a> From<T> for Ref<'a, T> {
     }
 }
 
-/// Safe wrapper for [`spng_sys::spng_splt`]
-#[repr(C)]
-pub struct Splt(sys::spng_splt);
+/// `PNG` chunk data
+pub mod chunk {
+    use spng_sys as sys;
+    use std::{ffi::CStr, slice};
 
-impl Splt {
-    pub fn name(&self) -> Result<&str, std::str::Utf8Error> {
-        unsafe { CStr::from_ptr(self.0.name.as_ptr() as _).to_str() }
+    /// Safe wrapper for [`spng_sys::spng_splt`]
+    #[repr(C)]
+    pub struct Splt(pub(crate) sys::spng_splt);
+
+    impl Splt {
+        pub fn name(&self) -> Result<&str, std::str::Utf8Error> {
+            unsafe { CStr::from_ptr(self.0.name.as_ptr() as _).to_str() }
+        }
+
+        pub fn sample_depth(&self) -> u8 {
+            self.0.sample_depth
+        }
+
+        pub fn entries(&self) -> &[sys::spng_splt_entry] {
+            unsafe { slice::from_raw_parts(self.0.entries, self.0.n_entries as usize) }
+        }
     }
 
-    pub fn sample_depth(&self) -> u8 {
-        self.0.sample_depth
+    /// Safe wrapper for [`spng_sys::spng_plte`]
+    #[repr(C)]
+    pub struct Plte(pub(crate) sys::spng_plte);
+
+    impl Plte {
+        pub fn entries(&self) -> &[PlteEntry] {
+            unsafe { slice::from_raw_parts(self.0.entries.as_ptr(), self.0.n_entries as usize) }
+        }
     }
 
-    pub fn entries(&self) -> &[sys::spng_splt_entry] {
-        unsafe { slice::from_raw_parts(self.0.entries, self.0.n_entries as usize) }
-    }
-}
+    /// Safe wrapper for [`spng_sys::spng_exif`]
+    #[repr(C)]
+    pub struct Exif(pub(crate) sys::spng_exif);
 
-/// Safe wrapper for [`spng_sys::spng_plte`]
-#[repr(C)]
-pub struct Plte(sys::spng_plte);
-
-impl Plte {
-    pub fn entries(&self) -> &[sys::spng_plte_entry] {
-        unsafe { slice::from_raw_parts(self.0.entries.as_ptr(), self.0.n_entries as usize) }
-    }
-}
-
-/// Safe wrapper for [`spng_sys::spng_exif`]
-#[repr(C)]
-pub struct Exif(sys::spng_exif);
-
-impl Exif {
-    pub fn data(&self) -> &[u8] {
-        unsafe { slice::from_raw_parts(self.0.data as _, self.0.length as usize) }
-    }
-}
-
-/// Safe wrapper for [`spng_sys::spng_text`]
-#[repr(C)]
-pub struct Text(sys::spng_text);
-
-impl Text {
-    pub fn keyword(&self) -> Result<&str, std::str::Utf8Error> {
-        unsafe { CStr::from_ptr(self.0.keyword.as_ptr() as _).to_str() }
+    impl Exif {
+        pub fn data(&self) -> &[u8] {
+            unsafe { slice::from_raw_parts(self.0.data as _, self.0.length as usize) }
+        }
     }
 
-    pub fn type_(&self) -> i32 {
-        self.0.type_
+    /// Safe wrapper for [`spng_sys::spng_text`]
+    #[repr(C)]
+    pub struct Text(pub(crate) sys::spng_text);
+
+    impl Text {
+        pub fn keyword(&self) -> Result<&str, std::str::Utf8Error> {
+            unsafe { CStr::from_ptr(self.0.keyword.as_ptr() as _).to_str() }
+        }
+
+        pub fn type_(&self) -> i32 {
+            self.0.type_
+        }
+
+        pub fn length(&self) -> usize {
+            self.0.length
+        }
+
+        pub fn text(&self) -> Result<&str, std::str::Utf8Error> {
+            unsafe { CStr::from_ptr(self.0.text).to_str() }
+        }
+
+        pub fn compression_flag(&self) -> u8 {
+            self.0.compression_flag
+        }
+
+        pub fn compression_method(&self) -> u8 {
+            self.0.compression_method
+        }
+
+        pub fn language_tag(&self) -> Result<&str, std::str::Utf8Error> {
+            unsafe { CStr::from_ptr(self.0.language_tag).to_str() }
+        }
+
+        pub fn translated_keyword(&self) -> Result<&str, std::str::Utf8Error> {
+            unsafe { CStr::from_ptr(self.0.translated_keyword).to_str() }
+        }
     }
 
-    pub fn length(&self) -> usize {
-        self.0.length
+    /// Safe wrapper for [`spng_sys::spng_iccp`]
+    #[repr(C)]
+    pub struct Iccp(pub(crate) sys::spng_iccp);
+
+    impl Iccp {
+        pub fn profile_name(&self) -> Result<&str, std::str::Utf8Error> {
+            unsafe { CStr::from_ptr(self.0.profile_name.as_ptr()).to_str() }
+        }
+
+        pub fn profile(&self) -> &[u8] {
+            unsafe { slice::from_raw_parts(self.0.profile as _, self.0.profile_len as usize) }
+        }
     }
 
-    pub fn text(&self) -> Result<&str, std::str::Utf8Error> {
-        unsafe { CStr::from_ptr(self.0.text).to_str() }
-    }
-
-    pub fn compression_flag(&self) -> u8 {
-        self.0.compression_flag
-    }
-
-    pub fn compression_method(&self) -> u8 {
-        self.0.compression_method
-    }
-
-    pub fn language_tag(&self) -> Result<&str, std::str::Utf8Error> {
-        unsafe { CStr::from_ptr(self.0.language_tag).to_str() }
-    }
-
-    pub fn translated_keyword(&self) -> Result<&str, std::str::Utf8Error> {
-        unsafe { CStr::from_ptr(self.0.translated_keyword).to_str() }
-    }
-}
-
-/// Safe wrapper for [`spng_sys::spng_iccp`]
-#[repr(C)]
-pub struct Iccp(sys::spng_iccp);
-
-impl Iccp {
-    pub fn profile_name(&self) -> Result<&str, std::str::Utf8Error> {
-        unsafe { CStr::from_ptr(self.0.profile_name.as_ptr()).to_str() }
-    }
-
-    pub fn profile(&self) -> &[u8] {
-        unsafe { slice::from_raw_parts(self.0.profile as _, self.0.profile_len as usize) }
-    }
+    /// Image header
+    pub type Ihdr = sys::spng_ihdr;
+    /// Transparency
+    pub type Trns = sys::spng_trns;
+    /// Primary chromacities and white point as floating point numbers
+    pub type Chrm = sys::spng_chrm;
+    /// Primary chromacities and white point in the PNG's internal representation
+    pub type ChrmInt = sys::spng_chrm_int;
+    /// Significant bits
+    pub type Sbit = sys::spng_sbit;
+    /// Background color
+    pub type Bkgd = sys::spng_bkgd;
+    /// Physical pixel dimensions
+    pub type Phys = sys::spng_phys;
+    /// Modification time
+    pub type Time = sys::spng_time;
+    /// Offset
+    pub type Offs = sys::spng_offs;
+    /// To-be-decoded row information
+    pub type RowInfo = sys::spng_row_info;
+    /// Palette entry
+    pub type PlteEntry = spng_sys::spng_plte_entry;
 }

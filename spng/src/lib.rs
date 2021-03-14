@@ -51,8 +51,8 @@ pub enum Format {
     Rgba16 = sys::spng_format_SPNG_FMT_RGBA16,
     Rgb8 = sys::spng_format_SPNG_FMT_RGB8,
     G8 = sys::spng_format_SPNG_FMT_G8,
-    GA8 = sys::spng_format_SPNG_FMT_GA8,
-    GA16 = sys::spng_format_SPNG_FMT_GA16,
+    Ga8 = sys::spng_format_SPNG_FMT_GA8,
+    Ga16 = sys::spng_format_SPNG_FMT_GA16,
     /// The PNG's format in host-endian
     Png = sys::spng_format_SPNG_FMT_PNG,
     /// The PNG's format in big-endian
@@ -216,8 +216,8 @@ impl OutputInfo {
     ) -> Result<OutputInfo, Error> {
         let bit_depth = match output_format {
             Format::Png | Format::Raw => BitDepth::try_from(ihdr.bit_depth)?,
-            Format::Rgb8 | Format::Rgba8 | Format::G8 | Format::GA8 => BitDepth::Eight,
-            Format::Rgba16 | Format::GA16 => BitDepth::Sixteen,
+            Format::Rgb8 | Format::Rgba8 | Format::G8 | Format::Ga8 => BitDepth::Eight,
+            Format::Rgba16 | Format::Ga16 => BitDepth::Sixteen,
         };
         let color_type = match output_format {
             Format::Png | Format::Raw => ColorType::try_from(ihdr.color_type)?,
@@ -225,7 +225,7 @@ impl OutputInfo {
             Format::Rgba8 => ColorType::TruecolorAlpha,
             Format::Rgba16 => ColorType::TruecolorAlpha,
             Format::G8 => ColorType::Grayscale,
-            Format::GA8 | Format::GA16 => ColorType::GrayscaleAlpha,
+            Format::Ga8 | Format::Ga16 => ColorType::GrayscaleAlpha,
         };
         Ok(OutputInfo {
             bit_depth,
@@ -368,6 +368,11 @@ impl<R> Reader<R> {
     pub fn next_frame(&mut self, output: &mut [u8]) -> Result<(), Error> {
         self.ctx
             .decode_image(output, self.out_format, self.decode_flags)
+    }
+
+    /// Returns a reference to the `RawContext`.
+    pub fn raw_context(&self) -> &RawContext<R> {
+        &self.ctx
     }
 }
 
