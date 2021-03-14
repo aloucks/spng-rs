@@ -12,6 +12,20 @@ steps:
       CARGO_INCREMENTAL: 0
   - bash: |
       set -e -x
+      cargo bench --no-run --manifest-path=spng-benchmarks/Cargo.toml
+    displayName: Build benches in release mode (features = "zlib-ng")
+    env:
+      RUST_BACKTRACE: 1
+      CARGO_INCREMENTAL: 0
+  - bash: |
+      set -e -x
+      cargo bench --no-run --features zlib-ng --manifest-path=spng-benchmarks/Cargo.toml
+    displayName: Build benches in release mode
+    env:
+      RUST_BACKTRACE: 1
+      CARGO_INCREMENTAL: 0
+  - bash: |
+      set -e -x
       rustup component add clippy
       cargo clippy --all -- -D warnings
     displayName: Run clippy (stable only)
@@ -21,16 +35,17 @@ steps:
       CARGO_INCREMENTAL: 0
   - bash: |
       set -e -x
-      cargo test --lib --examples
-    displayName: Run unit tests
+      cargo test
+    displayName: Run tests
     env:
       RUST_BACKTRACE: 1
       CARGO_INCREMENTAL: 0
   - bash: |
       set -e -x
-      cargo test --tests
-    displayName: Run integration tests
-    # condition: False
+      cargo test --all-targets --features zlib-ng --manifest-path=spng-sys/Cargo.toml
+      cargo test --all-targets --features zlib-ng --manifest-path=spng/Cargo.toml
+      cargo test --all-targets --features zlib-ng --manifest-path=spng-benchmarks/Cargo.toml
+    displayName: Run tests (features = "zlib-ng")
     env:
       RUST_BACKTRACE: 1
       CARGO_INCREMENTAL: 0
