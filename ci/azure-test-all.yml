@@ -12,15 +12,15 @@ steps:
       CARGO_INCREMENTAL: 0
   - bash: |
       set -e -x
-      cargo bench --no-run --manifest-path=spng-benchmarks/Cargo.toml
-    displayName: Build benches in release mode (features = "zlib-ng")
+      cargo bench --no-run --features zlib-ng --manifest-path=spng-benchmarks/Cargo.toml
+    displayName: Build release benches
     env:
       RUST_BACKTRACE: 1
       CARGO_INCREMENTAL: 0
   - bash: |
       set -e -x
-      cargo bench --no-run --features zlib-ng --manifest-path=spng-benchmarks/Cargo.toml
-    displayName: Build benches in release mode
+      cargo bench --no-run --manifest-path=spng-benchmarks/Cargo.toml
+    displayName: Build release benches (features = "zlib-ng")
     env:
       RUST_BACKTRACE: 1
       CARGO_INCREMENTAL: 0
