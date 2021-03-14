@@ -9,6 +9,7 @@ repository = "https://github.com/aloucks/spng-rs"
 documentation = "https://docs.rs/spng-sys"
 license = "MIT OR Apache-2.0"
 description = "Native bindings to libspng"
+readme = "../README.md"
 
 [dependencies]
 libz-sys = "1.0"
