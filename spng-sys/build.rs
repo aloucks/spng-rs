@@ -13,5 +13,8 @@ fn main() {
     }
     build.compile("spng");
 
+    // DEP_SPNG_INCLUDE for other crates
+    println!("cargo:include=libspng/spng");
+
     println!("cargo:rustc-link-lib=static=z");
 }
