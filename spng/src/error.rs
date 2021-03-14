@@ -85,6 +85,10 @@ pub enum Error {
     NcodeOnly = sys::spng_errno_SPNG_ENCODE_ONLY,
     Oi = sys::spng_errno_SPNG_EOI,
     Noplte = sys::spng_errno_SPNG_ENOPLTE,
+    ChunkLimits = sys::spng_errno_SPNG_ECHUNK_LIMITS,
+    ZlibInit = sys::spng_errno_SPNG_EZLIB_INIT,
+    ChunkStdlen = sys::spng_errno_SPNG_ECHUNK_STDLEN,
+    Internal = sys::spng_errno_SPNG_EINTERNAL,
 }
 
 pub fn check_err(e: i32) -> Result<(), Error> {
@@ -169,6 +173,10 @@ pub fn check_err(e: i32) -> Result<(), Error> {
         sys::spng_errno_SPNG_ENCODE_ONLY => Err(NcodeOnly),
         sys::spng_errno_SPNG_EOI => Err(Oi),
         sys::spng_errno_SPNG_ENOPLTE => Err(Noplte),
+        sys::spng_errno_SPNG_ECHUNK_LIMITS => Err(ChunkLimits),
+        sys::spng_errno_SPNG_EZLIB_INIT => Err(ZlibInit),
+        sys::spng_errno_SPNG_ECHUNK_STDLEN => Err(ChunkStdlen),
+        sys::spng_errno_SPNG_EINTERNAL => Err(Internal),
         _ => {
             eprintln!("unknown spng error code: {}", e);
             Err(Inval)

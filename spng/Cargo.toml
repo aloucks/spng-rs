@@ -1,6 +1,6 @@
 [package]
 name = "spng"
-version = "0.1.0-alpha.5"
+version = "0.1.0-alpha.6"
 authors = ["Aaron Loucks <aloucks@cofront.net>"]
 edition = "2018"
 keywords = ["spng", "png", "image", "decoder"]
@@ -14,3 +14,7 @@ readme = "../README.md"
 spng-sys = { version = "0.1.0-alpha", path = "../spng-sys" }
 bitflags = "1.0"
 libc = "0.2"
+
+[features]
+default = []
+zlib-ng = ["spng-sys/zlib-ng"]
