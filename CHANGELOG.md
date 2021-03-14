@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.0] - 2021-03-14
 ### Changed
 - Rename `Format::{GA8, GA16}` to `Format::{Ga8, Ga16}` to be consistent with other `Format` enum values
 - Rename `raw::IfPresent` to `raw::ChunkAvailable`
@@ -47,7 +49,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Initial rust wrapper with minimal API surface
 - Initial native bindings to [libspng] `master` ([2079ef6])
 
-[Unreleased]: https://github.com/aloucks/spng-rs/compare/v0.1.0-alpha.6...HEAD
+[Unreleased]: https://github.com/aloucks/spng-rs/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0
 [0.1.0-alpha.6]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0-alpha.6
 [0.1.0-alpha.5]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0-alpha.5
 [0.1.0-alpha.4]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0-alpha.4
