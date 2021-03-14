@@ -15,7 +15,7 @@ Rust bindings to [libspng].
 
 ## Performance
 
-This [test image] is decoded 5x faster than with the [png] crate and `--features=zlib-ng`.
+This [test image] is decoded ~ 3-5x faster than with the [png] crate.
 
 ```
 png_decode              time:   [2.1378 ms 2.1410 ms 2.1446 ms]
