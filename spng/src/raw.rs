@@ -277,6 +277,15 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Get the image histogram.
+    pub fn get_hist(&self) -> Result<Hist, Error> {
+        unsafe {
+            let mut chunk = MaybeUninit::uninit();
+            check_err(sys::spng_get_hist(self.raw, chunk.as_mut_ptr()))?;
+            Ok(chunk.assume_init())
+        }
+    }
+
     /// Get physical pixel dimensions.
     pub fn get_phys(&self) -> Result<Phys, Error> {
         unsafe {
@@ -608,6 +617,8 @@ pub mod chunk {
     pub type Sbit = sys::spng_sbit;
     /// Background color
     pub type Bkgd = sys::spng_bkgd;
+    /// Histogram
+    pub type Hist = sys::spng_hist;
     /// Physical pixel dimensions
     pub type Phys = sys::spng_phys;
     /// Modification time

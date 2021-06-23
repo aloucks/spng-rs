@@ -157,7 +157,7 @@ bitflags::bitflags! {
 }
 
 /// Decoding limits
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Limits {
     /// Maximum image width
     pub max_width: u32,
@@ -187,7 +187,7 @@ pub struct Decoder<R> {
 }
 
 /// Decoded output image information
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct OutputInfo {
     /// The image width in pixels
     pub width: u32,
@@ -238,7 +238,7 @@ impl OutputInfo {
 }
 
 /// PNG image information
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Info {
     /// The image width in pixels
     pub width: u32,
@@ -281,8 +281,8 @@ impl<R> Decoder<R> {
         Decoder {
             reader,
             limits,
-            decode_flags,
             context_flags,
+            decode_flags,
             output_format,
         }
     }
