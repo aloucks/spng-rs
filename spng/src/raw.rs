@@ -366,6 +366,24 @@ impl<R> RawContext<R> {
         }
     }
 
+    pub fn get_unknown_chunks(&self) -> Result<Ref<Vec<UnknownChunk>>, Error> {
+        unsafe {
+            use std::ptr;
+            let mut len = 0;
+            check_err(sys::spng_get_unknown_chunks(
+                self.raw,
+                ptr::null_mut(),
+                &mut len,
+            ))?;
+            let mut vec = Vec::<UnknownChunk>::new();
+            vec.reserve_exact(len as usize);
+            vec.set_len(len as usize);
+            let chunk_ptr = vec.as_mut_ptr() as *mut sys::spng_unknown_chunk;
+            check_err(sys::spng_get_unknown_chunks(self.raw, chunk_ptr, &mut len))?;
+            Ok(Ref::from(vec))
+        }
+    }
+
     /// Calculates decoded image buffer size for the given output format.
     ///
     /// PNG data must have been set prior with [`set_png_stream`] or [`set_png_buffer`].
@@ -602,6 +620,21 @@ pub mod chunk {
 
         pub fn profile(&self) -> &[u8] {
             unsafe { slice::from_raw_parts(self.0.profile as _, self.0.profile_len as usize) }
+        }
+    }
+
+    #[repr(C)]
+    pub struct UnknownChunk(pub(crate) spng_sys::spng_unknown_chunk);
+
+    impl UnknownChunk {
+        /// Returns the chunk type or `None` if it could not be parsed as valid `utf-8`.
+        pub fn type_(&self) -> Option<&str> {
+            std::str::from_utf8(&self.0.type_).ok()
+        }
+
+        /// Returns the chunk data.
+        pub fn data(&self) -> &[u8] {
+            unsafe { slice::from_raw_parts(self.0.data as _, self.0.length as usize) }
         }
     }
 

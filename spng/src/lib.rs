@@ -32,7 +32,7 @@ pub use error::Error;
 
 use raw::RawContext;
 
-#[repr(u32)]
+#[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum CrcAction {
     /// Default
@@ -44,7 +44,7 @@ pub enum CrcAction {
 }
 
 /// PNG output format
-#[repr(u32)]
+#[repr(i32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Format {
     Rgba8 = sys::spng_format_SPNG_FMT_RGBA8,
@@ -86,7 +86,7 @@ impl TryFrom<u8> for ColorType {
     type Error = Error;
     fn try_from(value: u8) -> Result<ColorType, Error> {
         use ColorType::*;
-        match value as u32 {
+        match value as i32 {
             sys::spng_color_type_SPNG_COLOR_TYPE_GRAYSCALE => Ok(Grayscale),
             sys::spng_color_type_SPNG_COLOR_TYPE_TRUECOLOR => Ok(Truecolor),
             sys::spng_color_type_SPNG_COLOR_TYPE_INDEXED => Ok(Indexed),
@@ -137,7 +137,7 @@ impl TryFrom<u8> for BitDepth {
 
 bitflags::bitflags! {
     /// Decoding flags
-    pub struct DecodeFlags: u32 {
+    pub struct DecodeFlags: i32 {
         /// Apply transparency
         const TRANSPARENCY = sys::spng_decode_flags_SPNG_DECODE_TRNS;
         /// Apply gamma correction
@@ -150,7 +150,7 @@ bitflags::bitflags! {
 }
 
 bitflags::bitflags! {
-    pub struct ContextFlags: u32 {
+    pub struct ContextFlags: i32 {
         /// Ignore checksum in `DEFLATE` streams
         const IGNORE_ADLER32 = sys::spng_ctx_flags_SPNG_CTX_IGNORE_ADLER32;
     }

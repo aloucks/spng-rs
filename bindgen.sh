@@ -1,4 +1,6 @@
+VERSION=$(bindgen --version)
 bindgen -o spng-sys/src/ffi.rs \
+ --raw-line "/* ${VERSION} */" \
  --whitelist-type "spng_.*" \
  --whitelist-var "SPNG_.*" \
  --whitelist-function "spng_.*" \
