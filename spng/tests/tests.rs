@@ -135,3 +135,8 @@ fn decode_001_raw_context() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!("Created with GIMP", text_str);
     Ok(())
 }
+
+#[test]
+fn version() {
+    println!("{:?}", spng::version());
+}

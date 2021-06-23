@@ -5,9 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Added
+- Update to libspng `0.7.0-rc2`
 - `Limits`, `Info`, and `OutputInfo` now implment `Debug`, `Copy`, `Clone`, `PartialEq`, `Eq`, `Hash`
 - `RawContext::get_hist`
- 
+- `RawContext::get_unknown_chunks`
+- The major, minor, and patch version can be queried with `spng::version()`
+
 ## [0.1.0] - 2021-03-14
 ### Changed
 - Rename `Format::{GA8, GA16}` to `Format::{Ga8, Ga16}` to be consistent with other `Format` enum values

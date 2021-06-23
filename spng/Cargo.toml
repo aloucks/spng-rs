@@ -11,7 +11,7 @@ description = "Rust bindings to libspng"
 readme = "../README.md"
 
 [dependencies]
-spng-sys = { version = "0.1.0", path = "../spng-sys" }
+spng-sys = { version = "0.2.0", path = "../spng-sys" }
 bitflags = "1.2"
 libc = "0.2"
 
