@@ -394,5 +394,9 @@ where
 
 /// Returns the `libspng` version: `(major, minor, patch)`
 pub fn version() -> (u32, u32, u32) {
-    (spng_sys::SPNG_VERSION_MAJOR, spng_sys::SPNG_VERSION_MINOR, spng_sys::SPNG_VERSION_PATCH)
+    (
+        spng_sys::SPNG_VERSION_MAJOR,
+        spng_sys::SPNG_VERSION_MINOR,
+        spng_sys::SPNG_VERSION_PATCH,
+    )
 }
