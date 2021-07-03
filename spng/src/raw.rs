@@ -247,11 +247,7 @@ impl<R> RawContext<R> {
     /// Get text information.
     ///
     /// ### Note
-    /// Due to the structure of PNG files it is recommended to call this function after
-    /// [`decode_image`] to retrieve all text chunks.
-    ///
-    /// ### Safety
-    /// Text data is freed after the context is dropped.
+    /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
     ///
     /// [`decode_image`]: method@RawContext::decode_image
     pub fn get_text(&self) -> Result<Ref<Vec<Text>>, Error> {
@@ -296,11 +292,6 @@ impl<R> RawContext<R> {
     }
 
     /// Get the suggested palettes.
-    ///
-    /// ### Safety
-    /// Suggested palettes are freed when the context is dropped.
-    ///
-    /// [`decode_image`]: method@RawContext::decode_image
     pub fn get_splt(&self) -> Result<Ref<Vec<Splt>>, Error> {
         unsafe {
             use std::ptr;
@@ -343,10 +334,6 @@ impl<R> RawContext<R> {
     /// ### Note
     /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
     ///
-    ///
-    /// ### Safety
-    /// `exif.data` is freed when the context is dropped.
-    ///
     /// [`decode_image`]: method@RawContext::decode_image
     pub fn get_exif(&self) -> Result<Ref<Exif>, Error> {
         unsafe {
@@ -366,6 +353,12 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Returns unknown chunk information.
+    ///
+    /// ### Note
+    /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
     pub fn get_unknown_chunks(&self) -> Result<Ref<Vec<UnknownChunk>>, Error> {
         unsafe {
             use std::ptr;
@@ -504,8 +497,6 @@ impl<'a> RawContext<&'a [u8]> {
     }
 }
 
-/// An owned reference.
-///
 /// Attaches lifetime `'a` to `T`.
 pub struct Ref<'a, T: 'a> {
     data: T,
@@ -623,13 +614,14 @@ pub mod chunk {
         }
     }
 
+    /// Safe wrapper for [`spng_sys::spng_unknown_chunk`]
     #[repr(C)]
     pub struct UnknownChunk(pub(crate) spng_sys::spng_unknown_chunk);
 
     impl UnknownChunk {
-        /// Returns the chunk type or `None` if it could not be parsed as valid `utf-8`.
-        pub fn type_(&self) -> Option<&str> {
-            std::str::from_utf8(&self.0.type_).ok()
+        /// Returns the chunk type.
+        pub fn type_(&self) -> Result<&str, std::str::Utf8Error> {
+            std::str::from_utf8(&self.0.type_)
         }
 
         /// Returns the chunk data.
