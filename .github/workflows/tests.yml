@@ -1,0 +1,104 @@
+name: tests
+on:
+  schedule:
+  - cron: "0 0 * * 5"
+  pull_request:
+  push:
+    branches: [master, workflows]
+    paths-ignore:
+    - CHANGELOG.md
+    - README.md
+  workflow_dispatch:
+
+jobs:
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - uses: actions-rs/toolchain@v1
+      id: rust
+      with:
+        toolchain: stable
+        override: true
+        profile: minimal
+        components: clippy
+    - name: Run clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+  check:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt
+        profile: minimal
+    - name: Check formatting
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --all -- --check
+  test:
+    name: Test
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [stable, nightly]
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: 1
+      CARGO_INCREMENTAL: 0
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.toolchain }}
+        default: true
+        override: true
+        profile: minimal
+    - name: Build and Test
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+
+  test_arm:
+    name: Test ARM
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        toolchain: [stable]
+        target: [aarch64-unknown-linux-gnu, armv7-unknown-linux-gnueabi]
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: 1
+      CARGO_INCREMENTAL: 0
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.toolchain }}
+        default: true
+        override: true
+        profile: minimal
+        target: ${{ matrix.target }}
+    - name: Build and Test
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
