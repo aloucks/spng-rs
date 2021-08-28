@@ -1,6 +1,7 @@
 VERSION=$(bindgen --version)
 bindgen -o spng-sys/src/ffi.rs \
  --raw-line "/* ${VERSION} */" \
+ --raw-line "#![allow(deref_nullptr)] /* https://github.com/rust-lang/rust-bindgen/pull/2055 */" \
  --whitelist-type "spng_.*" \
  --whitelist-var "SPNG_.*" \
  --whitelist-function "spng_.*" \
