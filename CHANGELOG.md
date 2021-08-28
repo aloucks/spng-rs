@@ -4,10 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.2.0-alpha.2] - 2021-08-28
 ### Changed
 - `UnknownChunk::_type()` now returns a `Result` instead of `Option` to be consistent with similar methods
 ### Removed
 - Removed documentation safety notes that no longer apply due to lifetime constraints
+### Fixed
+- The FFI error codes `SPNG_EWIDTH`, `SPNG_EHEIGHT`, and `SPNG_EUSER_WIDTH` are now converted correctly.
 
 ## [0.2.0-alpha.1] - 2021-06-23
 ### Added
@@ -61,7 +65,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Initial rust wrapper with minimal API surface
 - Initial native bindings to [libspng] `master` ([2079ef6])
 
-[Unreleased]: https://github.com/aloucks/spng-rs/compare/v0.2.0-alpha.1...HEAD
+[Unreleased]: https://github.com/aloucks/spng-rs/compare/v0.2.0-alpha.2...HEAD
+[0.2.0-alpha.2]: https://github.com/aloucks/spng-rs/releases/tag/v0.2.0-alpha.2
 [0.2.0-alpha.1]: https://github.com/aloucks/spng-rs/releases/tag/v0.2.0-alpha.1
 [0.1.0]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0
 [0.1.0-alpha.6]: https://github.com/aloucks/spng-rs/releases/tag/v0.1.0-alpha.6

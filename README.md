@@ -11,6 +11,7 @@ Rust bindings to [libspng].
 
 | spng-rs  | libspng |
 | -------- | -------- |
+| `0.2.0-alpha.2` | [`0.7.0-rc2`](https://github.com/randy408/libspng/tree/v0.7.0-rc2) |
 | `0.2.0-alpha.1` | [`0.7.0-rc2`](https://github.com/randy408/libspng/tree/v0.7.0-rc2) |
 | `0.1.0` | [`0.6.3`](https://github.com/randy408/libspng/tree/264476a1521bcb1d526c05ece0ed68b855fcfc4c) |
 
