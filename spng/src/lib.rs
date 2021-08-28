@@ -8,15 +8,16 @@
 //! # static TEST_PNG: &[u8] = include_bytes!("../tests/test-001.png");
 //! let cursor = std::io::Cursor::new(TEST_PNG);
 //! let decoder = spng::Decoder::new(cursor);
-//! let (out_info, mut reader) = decoder.read_info()?;
+//! let mut reader = decoder.read_info()?;
+//! let info = reader.info();
 //! let output_buffer_size = reader.output_buffer_size();
-//! assert_eq!(300, out_info.width);
-//! assert_eq!(300, out_info.height);
-//! assert_eq!(8, out_info.bit_depth as u8);
-//! assert_eq!(4, out_info.color_type.samples());
-//! assert_eq!(out_info.buffer_size, output_buffer_size);
+//! assert_eq!(300, info.width);
+//! assert_eq!(300, info.height);
+//! assert_eq!(8, info.bit_depth as u8);
+//! assert_eq!(4, info.color_type.samples());
 //! let mut out = vec![0; output_buffer_size];
-//! reader.next_frame(&mut out)?;
+//! let out_info = reader.next_frame(&mut out)?;
+//! assert_eq!(output_buffer_size, out_info.buffer_size());
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
@@ -206,6 +207,10 @@ impl OutputInfo {
     pub fn line_size(&self) -> usize {
         self.buffer_size / self.height as usize
     }
+
+    pub fn buffer_size(&self) -> usize {
+        self.buffer_size
+    }
 }
 
 impl OutputInfo {
@@ -266,9 +271,9 @@ impl Info {
 pub struct Reader<R> {
     ctx: RawContext<R>,
     ihdr: sys::spng_ihdr,
-    out_format: Format,
-    decode_flags: DecodeFlags,
     output_buffer_size: usize,
+    output_format: Format,
+    decode_flags: DecodeFlags,
 }
 
 impl<R> Decoder<R> {
@@ -327,7 +332,7 @@ impl<R> Decoder<R> {
     }
 
     /// Read the `png` header and initialize decoding.
-    pub fn read_info(self) -> Result<(OutputInfo, Reader<R>), Error>
+    pub fn read_info(self) -> Result<Reader<R>, Error>
     where
         R: io::Read,
     {
@@ -336,20 +341,15 @@ impl<R> Decoder<R> {
         ctx.set_png_stream(self.reader)?;
         let ihdr = ctx.get_ihdr()?;
         let output_buffer_size = ctx.decoded_image_size(self.output_format)?;
-        let output_info = OutputInfo::from_ihdr_format_buffer_size(
-            &ihdr,
-            self.output_format,
-            output_buffer_size,
-        )?;
         let reader = Reader {
             ctx,
             ihdr,
-            out_format: self.output_format,
+            output_format: self.output_format,
             decode_flags: self.decode_flags,
             output_buffer_size,
         };
 
-        Ok((output_info, reader))
+        Ok(reader)
     }
 }
 
@@ -360,14 +360,22 @@ impl<R> Reader<R> {
     }
 
     /// Returns the minimum buffer size required for `next_frame`
+    #[inline]
     pub fn output_buffer_size(&self) -> usize {
         self.output_buffer_size
     }
 
     /// Decodes the next frame of the `png`. This currently may only be called once.
-    pub fn next_frame(&mut self, output: &mut [u8]) -> Result<(), Error> {
+    pub fn next_frame(&mut self, output: &mut [u8]) -> Result<OutputInfo, Error> {
         self.ctx
-            .decode_image(output, self.out_format, self.decode_flags)
+            .decode_image(output, self.output_format, self.decode_flags)?;
+        let ihdr = self.ctx.get_ihdr()?;
+        let output_info = OutputInfo::from_ihdr_format_buffer_size(
+            &ihdr,
+            self.output_format,
+            self.output_buffer_size(),
+        )?;
+        Ok(output_info)
     }
 
     /// Returns a reference to the `RawContext`.
@@ -382,13 +390,13 @@ where
     R: io::Read,
 {
     let decoder = Decoder::new(reader).with_output_format(output_format);
-    let (out_info, mut reader) = decoder.read_info()?;
+    let mut reader = decoder.read_info()?;
     let mut out = Vec::new();
-    out.reserve_exact(out_info.buffer_size);
+    out.reserve_exact(reader.output_buffer_size());
     unsafe {
-        out.set_len(out_info.buffer_size);
+        out.set_len(reader.output_buffer_size());
     }
-    reader.next_frame(&mut out)?;
+    let out_info = reader.next_frame(&mut out)?;
     Ok((out_info, out))
 }
 
