@@ -12,7 +12,7 @@ zlib-ng = ["spng/zlib-ng"]
 
 [dev-dependencies]
 spng = { path = "../spng" }
-png = "0.16"
+png = "0.17"
 criterion = { version = "0.3", features = ["html_reports"] }
 criterion-macro = "0.3"
 
