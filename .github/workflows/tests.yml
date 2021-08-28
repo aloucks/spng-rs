@@ -55,7 +55,6 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [stable, nightly]
-        features: ["", zlib-ng]
     runs-on: ${{ matrix.os }}
     env:
       CARGO_TERM_COLOR: always
@@ -71,16 +70,26 @@ jobs:
         default: true
         override: true
         profile: minimal
-    - name: Build and Test
+    - name: Test
       uses: actions-rs/cargo@v1
       with:
         command: test
         args: --workspace --all-targets --features "${{ matrix.features }}"
-    - name: Build and Test (release)
+    - name: Test (features="zlib-ng")
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --workspace --all-targets --features "${{ matrix.features }}" --release
+        args: --workspace --all-targets --features "zlib-ng"
+    - name: Test (release)
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --workspace --all-targets --release
+    - name: Test (release, features="zlib-ng")
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --workspace --all-targets --features "zlib-ng" --release
 
   test_arm:
     name: Test ARM
@@ -89,7 +98,6 @@ jobs:
         os: [ubuntu-latest]
         toolchain: [stable]
         target: [aarch64-unknown-linux-gnu, armv7-unknown-linux-gnueabi]
-        features: ["", zlib-ng]
     runs-on: ${{ matrix.os }}
     env:
       CARGO_TERM_COLOR: always
@@ -106,13 +114,23 @@ jobs:
         override: true
         profile: minimal
         target: ${{ matrix.target }}
-    - name: Build and Test
+    - name: Test
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --workspace --all-targets --features "${{ matrix.features }}"
-    - name: Build and Test (release)
+        args: --workspace --all-targets
+    - name: Test (features="zlib-ng")
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --workspace --all-targets --features "${{ matrix.features }}" --release
+        args: --workspace --all-targets --features "zlib-ng"
+    - name: Test (release)
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --workspace --all-targets --release
+    - name: Test (release, features="zlib-ng")
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --workspace --all-targets --features "zlib-ng" --release
