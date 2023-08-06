@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 ### Changed
 - Updated the `Decoder` `read_info` and `next_frame` API to match recent changes in the PNG crate (`v0.17.0`).
+- Remove `Ref` type and add lifetimes to the raw safe wrappers.
+## Added
+- `TextType`
 
 ## [0.2.0-alpha.2] - 2021-08-28
 ### Changed

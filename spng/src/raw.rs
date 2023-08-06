@@ -8,7 +8,7 @@ use crate::{
 use self::chunk::*;
 
 use spng_sys as sys;
-use std::{io, marker::PhantomData, mem, mem::MaybeUninit, slice};
+use std::{convert::TryFrom, io, mem, mem::MaybeUninit, slice};
 
 unsafe extern "C" fn read_fn<R: io::Read>(
     _: *mut sys::spng_ctx,
@@ -63,6 +63,36 @@ impl<T> ChunkAvail<T> for Result<T, Error> {
             Err(error) => Err(error),
         }
     }
+}
+
+#[repr(i32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum TextType {
+    /// `Latin-1` encoded text that is never compressed
+    Text = sys::spng_text_type_SPNG_TEXT,
+    /// `Latin-1` encoded text that is always compressed
+    Ztxt = sys::spng_text_type_SPNG_ZTXT,
+    /// `UTF-8` encoded text that may or may not be compressed
+    Itxt = sys::spng_text_type_SPNG_ITXT,
+}
+
+impl TryFrom<i32> for TextType {
+    type Error = Error;
+    fn try_from(value: i32) -> Result<TextType, Error> {
+        use TextType::*;
+        match value as i32 {
+            sys::spng_text_type_SPNG_TEXT => Ok(Text),
+            sys::spng_text_type_SPNG_ZTXT => Ok(Ztxt),
+            sys::spng_text_type_SPNG_ITXT => Ok(Itxt),
+            _ => Err(Error::Text),
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Compression {
+    Zlib = 0,
 }
 
 /// The raw decoding context.
@@ -169,11 +199,12 @@ impl<R> RawContext<R> {
     }
 
     /// Get the image palette.
-    pub fn get_plte(&self) -> Result<Ref<Plte>, Error> {
+    pub fn get_plte(&self) -> Result<Plte<'_>, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_plte(self.raw, chunk.as_mut_ptr()))?;
-            Ok(Ref::from(Plte(chunk.assume_init())))
+            let plte = mem::transmute(chunk.assume_init());
+            Ok(plte)
         }
     }
 
@@ -217,12 +248,12 @@ impl<R> RawContext<R> {
     ///
     /// ### Note
     /// ICC profiles are not validated.
-    pub fn get_iccp(&self) -> Result<Ref<Iccp>, Error> {
+    pub fn get_iccp(&self) -> Result<Iccp<'_>, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_iccp(self.raw, chunk.as_mut_ptr()))?;
             let chunk: Iccp = mem::transmute(chunk.assume_init());
-            Ok(Ref::from(chunk))
+            Ok(chunk)
         }
     }
 
@@ -250,7 +281,7 @@ impl<R> RawContext<R> {
     /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
     ///
     /// [`decode_image`]: method@RawContext::decode_image
-    pub fn get_text(&self) -> Result<Ref<Vec<Text>>, Error> {
+    pub fn get_text(&self) -> Result<Vec<Text<'_>>, Error> {
         unsafe {
             use std::ptr;
             let mut len = 0;
@@ -260,7 +291,7 @@ impl<R> RawContext<R> {
             vec.set_len(len as usize);
             let text_ptr = vec.as_mut_ptr() as *mut sys::spng_text;
             check_err(sys::spng_get_text(self.raw, text_ptr, &mut len))?;
-            Ok(Ref::from(vec))
+            Ok(vec)
         }
     }
 
@@ -292,7 +323,7 @@ impl<R> RawContext<R> {
     }
 
     /// Get the suggested palettes.
-    pub fn get_splt(&self) -> Result<Ref<Vec<Splt>>, Error> {
+    pub fn get_splt(&self) -> Result<Vec<Splt<'_>>, Error> {
         unsafe {
             use std::ptr;
             let mut len = 0;
@@ -302,7 +333,7 @@ impl<R> RawContext<R> {
             vec.set_len(len as usize);
             let splt_ptr = vec.as_mut_ptr() as *mut sys::spng_splt;
             check_err(sys::spng_get_splt(self.raw, splt_ptr, &mut len))?;
-            Ok(Ref::from(vec))
+            Ok(vec)
         }
     }
 
@@ -335,12 +366,12 @@ impl<R> RawContext<R> {
     /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
     ///
     /// [`decode_image`]: method@RawContext::decode_image
-    pub fn get_exif(&self) -> Result<Ref<Exif>, Error> {
+    pub fn get_exif(&self) -> Result<Exif<'_>, Error> {
         unsafe {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_exif(self.raw, chunk.as_mut_ptr()))?;
             let chunk: Exif = mem::transmute(chunk.assume_init());
-            Ok(Ref::from(chunk))
+            Ok(chunk)
         }
     }
 
@@ -359,7 +390,7 @@ impl<R> RawContext<R> {
     /// Due to the structure of PNG files it is recommended to call this function after [`decode_image`].
     ///
     /// [`decode_image`]: method@RawContext::decode_image
-    pub fn get_unknown_chunks(&self) -> Result<Ref<Vec<UnknownChunk>>, Error> {
+    pub fn get_unknown_chunks(&self) -> Result<Vec<UnknownChunk<'_>>, Error> {
         unsafe {
             use std::ptr;
             let mut len = 0;
@@ -373,7 +404,7 @@ impl<R> RawContext<R> {
             vec.set_len(len as usize);
             let chunk_ptr = vec.as_mut_ptr() as *mut sys::spng_unknown_chunk;
             check_err(sys::spng_get_unknown_chunks(self.raw, chunk_ptr, &mut len))?;
-            Ok(Ref::from(vec))
+            Ok(vec)
         }
     }
 
@@ -497,38 +528,19 @@ impl<'a> RawContext<&'a [u8]> {
     }
 }
 
-/// Attaches lifetime `'a` to `T`.
-pub struct Ref<'a, T: 'a> {
-    data: T,
-    _p: PhantomData<&'a ()>,
-}
-
-impl<'a, T: 'a> std::ops::Deref for Ref<'a, T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.data
-    }
-}
-
-impl<'a, T: 'a> From<T> for Ref<'a, T> {
-    fn from(t: T) -> Ref<'a, T> {
-        Ref {
-            data: t,
-            _p: PhantomData,
-        }
-    }
-}
-
 /// `PNG` chunk data
 pub mod chunk {
     use spng_sys as sys;
-    use std::{ffi::CStr, slice};
+    use std::{convert::TryFrom, ffi::CStr, marker::PhantomData, mem, slice};
+
+    use super::{Compression, TextType};
+    use crate::Error;
 
     /// Safe wrapper for [`spng_sys::spng_splt`]
     #[repr(C)]
-    pub struct Splt(pub(crate) sys::spng_splt);
+    pub struct Splt<'a>(pub(crate) sys::spng_splt, PhantomData<&'a ()>);
 
-    impl Splt {
+    impl<'a> Splt<'a> {
         pub fn name(&self) -> Result<&str, std::str::Utf8Error> {
             unsafe { CStr::from_ptr(self.0.name.as_ptr() as _).to_str() }
         }
@@ -537,16 +549,16 @@ pub mod chunk {
             self.0.sample_depth
         }
 
-        pub fn entries(&self) -> &[sys::spng_splt_entry] {
+        pub fn entries(&self) -> &[SpltEntry] {
             unsafe { slice::from_raw_parts(self.0.entries, self.0.n_entries as usize) }
         }
     }
 
     /// Safe wrapper for [`spng_sys::spng_plte`]
     #[repr(C)]
-    pub struct Plte(pub(crate) sys::spng_plte);
+    pub struct Plte<'a>(pub(crate) sys::spng_plte, PhantomData<&'a ()>);
 
-    impl Plte {
+    impl<'a> Plte<'a> {
         pub fn entries(&self) -> &[PlteEntry] {
             unsafe { slice::from_raw_parts(self.0.entries.as_ptr(), self.0.n_entries as usize) }
         }
@@ -554,41 +566,66 @@ pub mod chunk {
 
     /// Safe wrapper for [`spng_sys::spng_exif`]
     #[repr(C)]
-    pub struct Exif(pub(crate) sys::spng_exif);
+    pub struct Exif<'a>(pub(crate) sys::spng_exif, PhantomData<&'a ()>);
 
-    impl Exif {
+    impl<'a> Exif<'a> {
         pub fn data(&self) -> &[u8] {
             unsafe { slice::from_raw_parts(self.0.data as _, self.0.length as usize) }
         }
     }
 
+    pub struct TextBuf {
+        keyword: [u8; 80],
+        text: Vec<u8>,
+        text_type: TextType,
+        compression: Option<Compression>,
+        language_tag: Vec<u8>,
+        translated_keyword: Vec<u8>,
+    }
+
+    impl TextBuf {
+        pub fn text<'a>(&'a self) -> Text<'a> {
+            unsafe {
+                let raw = sys::spng_text {
+                    keyword: mem::transmute(self.keyword),
+                    type_: self.text_type as _,
+                    length: self.text.len(),
+                    text: self.text.as_ptr() as *mut _,
+                    compression_flag: self.compression.is_some() as _,
+                    compression_method: self.compression.map(|c| c as _).unwrap_or(0),
+                    language_tag: self.language_tag.as_ptr() as *mut _,
+                    translated_keyword: self.translated_keyword.as_ptr() as *mut _,
+                };
+                Text(raw, PhantomData)
+            }
+        }
+    }
+
     /// Safe wrapper for [`spng_sys::spng_text`]
     #[repr(C)]
-    pub struct Text(pub(crate) sys::spng_text);
+    pub struct Text<'a>(pub(crate) sys::spng_text, PhantomData<&'a ()>);
 
-    impl Text {
+    impl<'a> Text<'a> {
         pub fn keyword(&self) -> Result<&str, std::str::Utf8Error> {
             unsafe { CStr::from_ptr(self.0.keyword.as_ptr() as _).to_str() }
         }
 
-        pub fn type_(&self) -> i32 {
-            self.0.type_
+        pub fn text_type(&self) -> Result<TextType, Error> {
+            TextType::try_from(self.0.type_)
         }
 
-        pub fn length(&self) -> usize {
-            self.0.length
+        pub fn text(&self) -> &[u8] {
+            unsafe { slice::from_raw_parts(self.0.text as *const _, self.0.length) }
         }
 
-        pub fn text(&self) -> Result<&str, std::str::Utf8Error> {
-            unsafe { CStr::from_ptr(self.0.text).to_str() }
-        }
-
-        pub fn compression_flag(&self) -> u8 {
-            self.0.compression_flag
-        }
-
-        pub fn compression_method(&self) -> u8 {
-            self.0.compression_method
+        pub fn compression(&self) -> Result<Option<Compression>, Error> {
+            let f = self.0.compression_flag;
+            let m = self.0.compression_method;
+            match (f, m) {
+                (0, 0) => Ok(None),
+                (1, 0) => Ok(Some(Compression::Zlib)),
+                (_, _) => Err(Error::Inval),
+            }
         }
 
         pub fn language_tag(&self) -> Result<&str, std::str::Utf8Error> {
@@ -602,9 +639,9 @@ pub mod chunk {
 
     /// Safe wrapper for [`spng_sys::spng_iccp`]
     #[repr(C)]
-    pub struct Iccp(pub(crate) sys::spng_iccp);
+    pub struct Iccp<'a>(pub(crate) sys::spng_iccp, PhantomData<&'a ()>);
 
-    impl Iccp {
+    impl<'a> Iccp<'a> {
         pub fn profile_name(&self) -> Result<&str, std::str::Utf8Error> {
             unsafe { CStr::from_ptr(self.0.profile_name.as_ptr()).to_str() }
         }
@@ -616,9 +653,9 @@ pub mod chunk {
 
     /// Safe wrapper for [`spng_sys::spng_unknown_chunk`]
     #[repr(C)]
-    pub struct UnknownChunk(pub(crate) spng_sys::spng_unknown_chunk);
+    pub struct UnknownChunk<'a>(pub(crate) spng_sys::spng_unknown_chunk, PhantomData<&'a ()>);
 
-    impl UnknownChunk {
+    impl<'a> UnknownChunk<'a> {
         /// Returns the chunk type.
         pub fn type_(&self) -> Result<&str, std::str::Utf8Error> {
             std::str::from_utf8(&self.0.type_)
@@ -654,4 +691,6 @@ pub mod chunk {
     pub type RowInfo = sys::spng_row_info;
     /// Palette entry
     pub type PlteEntry = spng_sys::spng_plte_entry;
+    /// Suggested palette entry
+    pub type SpltEntry = spng_sys::spng_splt_entry;
 }

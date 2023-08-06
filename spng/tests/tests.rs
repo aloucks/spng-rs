@@ -1,5 +1,6 @@
-use spng::{raw::ChunkAvail, BitDepth, ColorType, Decoder};
-use std::io::{self, BufReader, Cursor, Read};
+use spng::{raw::ChunkAvail, raw::TextType, BitDepth, ColorType, Decoder};
+use std::convert::TryFrom;
+use std::io::{BufReader, Cursor, Read};
 
 static TEST_PNG_001: &[u8] = include_bytes!("test-001.png");
 static TEST_PNG_002: &[u8] = include_bytes!("test-002.png");
@@ -88,7 +89,6 @@ fn decode() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn decode_001_raw_context() -> Result<(), Box<dyn std::error::Error>> {
-    use std::convert::TryFrom;
     let out_format = spng::Format::Rgba8;
     let mut ctx = spng::raw::RawContext::new()?;
     ctx.set_png_stream(TEST_PNG_001)?;
@@ -104,8 +104,10 @@ fn decode_001_raw_context() -> Result<(), Box<dyn std::error::Error>> {
         .get_text()
         .chunk_avail()?
         .expect("text chunk in test image");
-    let text_str = text[0].text()?;
-    assert_eq!("Created with GIMP", text_str);
+    assert_eq!(1, text.len());
+    assert_eq!(TextType::Text, text[0].text_type()?);
+    let text = text[0].text();
+    assert_eq!(b"Created with GIMP", text);
     Ok(())
 }
 
