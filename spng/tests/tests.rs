@@ -1,5 +1,5 @@
 use spng::{raw::ChunkAvail, BitDepth, ColorType, Decoder};
-use std::io::{self, BufReader, Cursor, Read};
+use std::io::{BufReader, Cursor, Read};
 
 static TEST_PNG_001: &[u8] = include_bytes!("test-001.png");
 static TEST_PNG_002: &[u8] = include_bytes!("test-002.png");

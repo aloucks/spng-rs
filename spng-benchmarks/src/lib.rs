@@ -5,8 +5,6 @@ pub fn reserve(buf: &mut Vec<u8>, capacity: usize) {
     if cap < capacity {
         let additional = capacity - cap;
         buf.reserve(additional);
-        unsafe {
-            buf.set_len(capacity);
-        }
+        buf.extend(std::iter::repeat(0).take(additional));
     }
 }
