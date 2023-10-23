@@ -558,7 +558,7 @@ pub mod chunk {
 
     impl Exif {
         pub fn data(&self) -> &[u8] {
-            unsafe { slice::from_raw_parts(self.0.data as _, self.0.length as usize) }
+            unsafe { slice::from_raw_parts(self.0.data as _, self.0.length) }
         }
     }
 
@@ -610,7 +610,7 @@ pub mod chunk {
         }
 
         pub fn profile(&self) -> &[u8] {
-            unsafe { slice::from_raw_parts(self.0.profile as _, self.0.profile_len as usize) }
+            unsafe { slice::from_raw_parts(self.0.profile as _, self.0.profile_len) }
         }
     }
 
@@ -626,7 +626,7 @@ pub mod chunk {
 
         /// Returns the chunk data.
         pub fn data(&self) -> &[u8] {
-            unsafe { slice::from_raw_parts(self.0.data as _, self.0.length as usize) }
+            unsafe { slice::from_raw_parts(self.0.data as _, self.0.length) }
         }
     }
 
