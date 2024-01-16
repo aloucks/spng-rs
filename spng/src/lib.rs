@@ -138,6 +138,7 @@ impl TryFrom<u8> for BitDepth {
 
 bitflags::bitflags! {
     /// Decoding flags
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct DecodeFlags: u32 {
         /// Apply transparency
         const TRANSPARENCY = sys::spng_decode_flags_SPNG_DECODE_TRNS;
@@ -151,6 +152,7 @@ bitflags::bitflags! {
 }
 
 bitflags::bitflags! {
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct ContextFlags: u32 {
         /// Ignore checksum in `DEFLATE` streams
         const IGNORE_ADLER32 = sys::spng_ctx_flags_SPNG_CTX_IGNORE_ADLER32;
