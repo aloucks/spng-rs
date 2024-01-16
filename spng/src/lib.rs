@@ -157,6 +157,14 @@ bitflags::bitflags! {
     }
 }
 
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum SpngOption {
+    ZlibCompressionLevel = sys::spng_option_SPNG_IMG_COMPRESSION_LEVEL,
+    ZlibWindowBits = sys::spng_option_SPNG_IMG_WINDOW_BITS,
+    ChunkCountLimit = sys::spng_option_SPNG_CHUNK_COUNT_LIMIT,
+}
+
 /// Decoding limits
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Limits {
