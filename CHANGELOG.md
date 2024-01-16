@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Update to libspng `0.7.4`
+- `RawContext::get_gama_int`
+- `RawContext::decode_chunks`
+- `RawContext::set_option`
+- `RawContext::get_option`
+
 ### Changed
 - Updated the `Decoder` `read_info` and `next_frame` API to match recent changes in the PNG crate (`v0.17.0`).
 
