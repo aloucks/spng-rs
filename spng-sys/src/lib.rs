@@ -8,6 +8,11 @@ mod ffi;
 
 pub use ffi::*;
 
+// Declaring this crate as extern is needed so that the Rust compiler thinks libz
+// is used, and thus passes the expected parameters to get libz linked in. See:
+// https://github.com/dtolnay/link-cplusplus/blob/75a186c35babbb7b39d0e5c544e1dfc9cc704800/README.md?plain=1#L54-L62
+extern crate libz_sys;
+
 #[test]
 fn create_context() {
     use std::ptr;
