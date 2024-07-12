@@ -8,7 +8,7 @@ use crate::{
 use self::chunk::*;
 
 use spng_sys as sys;
-use std::{io, marker::PhantomData, mem, mem::MaybeUninit, slice, ptr::NonNull};
+use std::{io, marker::PhantomData, mem, mem::MaybeUninit, ptr::NonNull, slice};
 unsafe extern "C" fn read_fn<R: io::Read>(
     _: *mut sys::spng_ctx,
     user: *mut libc::c_void,
@@ -80,7 +80,7 @@ impl<R> Drop for RawContext<R> {
             unsafe {
                 sys::spng_ctx_free(self.raw);
             }
-        }  
+        }
         if let Some(reader) = self.reader {
             unsafe {
                 drop(Box::from_raw(reader.as_ptr()));
@@ -484,7 +484,13 @@ impl<R: io::Read> RawContext<R> {
         let unboxed = Box::into_raw(boxed);
         self.reader = NonNull::new(unboxed);
         let read_fn: sys::spng_read_fn = Some(read_fn::<R>);
-        unsafe { check_err(sys::spng_set_png_stream(self.raw, read_fn, unboxed as *mut _)) }
+        unsafe {
+            check_err(sys::spng_set_png_stream(
+                self.raw,
+                read_fn,
+                unboxed as *mut _,
+            ))
+        }
     }
 }
 

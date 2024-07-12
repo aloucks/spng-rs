@@ -166,7 +166,7 @@ pub struct Limits {
     pub max_height: u32,
 }
 
-const PNG_U32_MAX: u32 = std::u32::MAX / 2 - 1;
+const PNG_U32_MAX: u32 = u32::MAX / 2 - 1;
 
 impl Default for Limits {
     fn default() -> Limits {
