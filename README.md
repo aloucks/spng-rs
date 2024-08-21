@@ -9,20 +9,21 @@ Rust bindings to [libspng].
 
 ## Version
 
-| spng-rs  | libspng |
-| -------- | -------- |
-| `0.2.0-alpha.2` | [`0.7.0-rc2`](https://github.com/randy408/libspng/tree/v0.7.0-rc2) |
-| `0.2.0-alpha.1` | [`0.7.0-rc2`](https://github.com/randy408/libspng/tree/v0.7.0-rc2) |
-| `0.1.0` | [`0.6.3`](https://github.com/randy408/libspng/tree/264476a1521bcb1d526c05ece0ed68b855fcfc4c) |
+| spng-rs         | libspng                                                                                     |
+|-----------------|---------------------------------------------------------------------------------------------|
+| Unreleased      | [`0.7.4`](https://github.com/randy408/libspng/tree/v0.7.4)                                   |
+| `0.2.0-alpha.2` | [`0.7.0-rc2`](https://github.com/randy408/libspng/tree/v0.7.0-rc2)                   |
+| `0.2.0-alpha.1` | [`0.7.0-rc2`](https://github.com/randy408/libspng/tree/v0.7.0-rc2)                   |
+| `0.1.0`         | [`0.6.3`](https://github.com/randy408/libspng/tree/264476a1521bcb1d526c05ece0ed68b855fcfc4c) |
 
 ## Performance
 
 This [test image] is decoded ~ 3-5x faster than with the [png] crate.
 
 ```
-png_decode              time:   [2.1378 ms 2.1410 ms 2.1446 ms]
-spng_decode             time:   [778.51 us 780.36 us 782.33 us]
-spng_decode             time:   [420.45 us 421.26 us 422.12 us] (--features=zlib-ng)
+png_decode              time:   [1.7354 ms 1.7372 ms 1.7392 ms]
+spng_decode             time:   [569.27 µs 570.86 µs 572.45 µs]
+spng_decode             time:   [311.84 µs 312.45 µs 313.13 µs] (--features=zlib-ng)
 ```
 
 ## Examples

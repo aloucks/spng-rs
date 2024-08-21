@@ -2,7 +2,7 @@
 
 use crate::{
     error::{check_err, Error},
-    ContextFlags, CrcAction, DecodeFlags, Format,
+    ContextFlags, CrcAction, DecodeFlags, Format, SpngOption,
 };
 
 use self::chunk::*;
@@ -215,6 +215,15 @@ impl<R> RawContext<R> {
             check_err(sys::spng_get_gama(self.raw, chunk.as_mut_ptr()))?;
             Ok(chunk.assume_init())
         }
+    }
+
+    /// Get image gamma in PNG's internal representation.
+    pub fn get_gama_int(&self) -> Result<u32, Error> {
+        let mut gama_int = 0;
+        unsafe {
+            check_err(sys::spng_get_gama_int(self.raw, &mut gama_int))?;
+        }
+        Ok(gama_int)
     }
 
     /// Get the ICC profile.
@@ -456,6 +465,18 @@ impl<R> RawContext<R> {
         }
     }
 
+    /// Decode all chunks before or after the image data (IDAT) stream,
+    /// depending on the state of the decoder.
+    ///
+    /// If the image is decoded this function will read up to the end-of-file (IEND) marker.
+    ///
+    /// Calling this function before `decode_image` is optional.
+    ///
+    /// [`decode_image`]: method@RawContext::decode_image
+    pub fn decode_chunks(&mut self) -> Result<(), Error> {
+        unsafe { check_err(sys::spng_decode_chunks(self.raw)) }
+    }
+
     /// Decodes a scanline to `out`.
     ///
     /// This function requires the decoder to be initialized by calling [`decode_image`] with the
@@ -475,6 +496,20 @@ impl<R> RawContext<R> {
             ))
         }
     }
+
+    /// Sets `option` to the specified `value`.
+    pub fn set_option(&mut self, option: SpngOption, value: i32) -> Result<(), Error> {
+        unsafe { check_err(sys::spng_set_option(self.raw, option as _, value as _)) }
+    }
+
+    /// Gets the value for the specified `option`.
+    pub fn get_option(&self, option: SpngOption) -> Result<i32, Error> {
+        let mut value = 0;
+        unsafe {
+            check_err(sys::spng_get_option(self.raw, option as _, &mut value))?;
+        }
+        Ok(value as _)
+    }
 }
 
 impl<R: io::Read> RawContext<R> {
@@ -483,14 +518,8 @@ impl<R: io::Read> RawContext<R> {
         let boxed = Box::new(reader);
         let unboxed = Box::into_raw(boxed);
         self.reader = NonNull::new(unboxed);
-        let read_fn: sys::spng_read_fn = Some(read_fn::<R>);
-        unsafe {
-            check_err(sys::spng_set_png_stream(
-                self.raw,
-                read_fn,
-                unboxed as *mut _,
-            ))
-        }
+        let rw_fn: sys::spng_rw_fn = Some(read_fn::<R>);
+        unsafe { check_err(sys::spng_set_png_stream(self.raw, rw_fn, unboxed as *mut _)) }
     }
 }
 

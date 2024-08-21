@@ -89,6 +89,11 @@ pub enum Error {
     ZlibInit = sys::spng_errno_SPNG_EZLIB_INIT,
     ChunkStdlen = sys::spng_errno_SPNG_ECHUNK_STDLEN,
     Internal = sys::spng_errno_SPNG_EINTERNAL,
+    CtxType = sys::spng_errno_SPNG_ECTXTYPE,
+    NoSrc = sys::spng_errno_SPNG_ENOSRC,
+    NoDst = sys::spng_errno_SPNG_ENODST,
+    OpState = sys::spng_errno_SPNG_EOPSTATE,
+    NotFinal = sys::spng_errno_SPNG_ENOTFINAL,
 }
 
 pub fn check_err(e: i32) -> Result<(), Error> {
@@ -177,6 +182,11 @@ pub fn check_err(e: i32) -> Result<(), Error> {
         sys::spng_errno_SPNG_EZLIB_INIT => Err(ZlibInit),
         sys::spng_errno_SPNG_ECHUNK_STDLEN => Err(ChunkStdlen),
         sys::spng_errno_SPNG_EINTERNAL => Err(Internal),
+        sys::spng_errno_SPNG_ECTXTYPE => Err(CtxType),
+        sys::spng_errno_SPNG_ENOSRC => Err(NoSrc),
+        sys::spng_errno_SPNG_ENODST => Err(NoDst),
+        sys::spng_errno_SPNG_EOPSTATE => Err(OpState),
+        sys::spng_errno_SPNG_ENOTFINAL => Err(NotFinal),
         _ => {
             eprintln!("unknown spng error code: {}", e);
             Err(Inval)
