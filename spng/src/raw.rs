@@ -8,8 +8,7 @@ use crate::{
 use self::chunk::*;
 
 use spng_sys as sys;
-use std::{io, marker::PhantomData, mem, mem::MaybeUninit, slice};
-
+use std::{io, marker::PhantomData, mem, mem::MaybeUninit, ptr::NonNull, slice};
 unsafe extern "C" fn read_fn<R: io::Read>(
     _: *mut sys::spng_ctx,
     user: *mut libc::c_void,
@@ -72,7 +71,7 @@ impl<T> ChunkAvail<T> for Result<T, Error> {
 #[derive(Debug)]
 pub struct RawContext<R> {
     raw: *mut sys::spng_ctx,
-    reader: Option<Box<R>>,
+    reader: Option<NonNull<R>>,
 }
 
 impl<R> Drop for RawContext<R> {
@@ -80,6 +79,11 @@ impl<R> Drop for RawContext<R> {
         if !self.raw.is_null() {
             unsafe {
                 sys::spng_ctx_free(self.raw);
+            }
+        }
+        if let Some(reader) = self.reader {
+            unsafe {
+                drop(Box::from_raw(reader.as_ptr()));
             }
         }
     }
@@ -476,11 +480,17 @@ impl<R> RawContext<R> {
 impl<R: io::Read> RawContext<R> {
     /// Set the input `png` stream reader. The input buffer or stream may only be set once per context.
     pub fn set_png_stream(&mut self, reader: R) -> Result<(), Error> {
-        let mut boxed = Box::new(reader);
-        let user = boxed.as_mut() as *mut R as *mut _;
-        self.reader = Some(boxed);
+        let boxed = Box::new(reader);
+        let unboxed = Box::into_raw(boxed);
+        self.reader = NonNull::new(unboxed);
         let read_fn: sys::spng_read_fn = Some(read_fn::<R>);
-        unsafe { check_err(sys::spng_set_png_stream(self.raw, read_fn, user)) }
+        unsafe {
+            check_err(sys::spng_set_png_stream(
+                self.raw,
+                read_fn,
+                unboxed as *mut _,
+            ))
+        }
     }
 }
 
