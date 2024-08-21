@@ -15,26 +15,4 @@ fn main() {
 
     // DEP_SPNG_INCLUDE for other crates
     println!("cargo:include=libspng/spng");
-
-    println!("cargo:rustc-link-lib=static={}", libname());
-}
-
-#[cfg(not(feature = "zlib-ng"))]
-fn libname() -> &'static str {
-    "z"
-}
-
-#[cfg(feature = "zlib-ng")]
-fn libname() -> &'static str {
-    let target = env::var("TARGET").unwrap();
-    // Derived from: https://github.com/rust-lang/libz-sys/blob/36b3071331d9a87712c9d23fd7aea79208425c73/build.rs#L167
-    if target.contains("windows") {
-        if target.contains("msvc") && env::var("OPT_LEVEL").unwrap() == "0" {
-            "zlibstaticd"
-        } else {
-            "zlibstatic"
-        }
-    } else {
-        "z"
-    }
 }
