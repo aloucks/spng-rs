@@ -437,7 +437,7 @@ impl<R> RawContext<R> {
                 out.as_mut_ptr() as _,
                 out.len(),
                 out_format as _,
-                flags.bits as _,
+                flags.bits() as _,
             ))
         }
     }
