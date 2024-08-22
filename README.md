@@ -2,7 +2,6 @@
 
 [![crates.io](https://img.shields.io/crates/v/spng.svg)](https://crates.io/crates/spng)
 [![docs.rs](https://docs.rs/spng/badge.svg)](https://docs.rs/spng)
-[![build status](https://dev.azure.com/aloucks/aloucks/_apis/build/status/aloucks.spng-rs?branchName=master)](https://dev.azure.com/aloucks/aloucks/_build/latest?definitionId=5&branchName=master)
 [![tests](https://github.com/aloucks/spng-rs/actions/workflows/tests.yml/badge.svg)](https://github.com/aloucks/spng-rs/actions/workflows/tests.yml)
 
 Rust bindings to [libspng].
