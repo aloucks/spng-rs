@@ -564,7 +564,7 @@ pub mod chunk {
     use std::{ffi::CStr, slice};
 
     /// Safe wrapper for [`spng_sys::spng_splt`]
-    #[repr(C)]
+    #[repr(transparent)]
     pub struct Splt(pub(crate) sys::spng_splt);
 
     impl Splt {
@@ -582,7 +582,7 @@ pub mod chunk {
     }
 
     /// Safe wrapper for [`spng_sys::spng_plte`]
-    #[repr(C)]
+    #[repr(transparent)]
     pub struct Plte(pub(crate) sys::spng_plte);
 
     impl Plte {
@@ -592,7 +592,7 @@ pub mod chunk {
     }
 
     /// Safe wrapper for [`spng_sys::spng_exif`]
-    #[repr(C)]
+    #[repr(transparent)]
     pub struct Exif(pub(crate) sys::spng_exif);
 
     impl Exif {
@@ -602,7 +602,7 @@ pub mod chunk {
     }
 
     /// Safe wrapper for [`spng_sys::spng_text`]
-    #[repr(C)]
+    #[repr(transparent)]
     pub struct Text(pub(crate) sys::spng_text);
 
     impl Text {
@@ -620,6 +620,10 @@ pub mod chunk {
 
         pub fn text(&self) -> Result<&str, std::str::Utf8Error> {
             unsafe { CStr::from_ptr(self.0.text).to_str() }
+        }
+
+        pub fn text_bytes(&self) -> &[u8] {
+            unsafe { slice::from_raw_parts(self.0.text as _, self.0.length) }
         }
 
         pub fn compression_flag(&self) -> u8 {
@@ -640,7 +644,7 @@ pub mod chunk {
     }
 
     /// Safe wrapper for [`spng_sys::spng_iccp`]
-    #[repr(C)]
+    #[repr(transparent)]
     pub struct Iccp(pub(crate) sys::spng_iccp);
 
     impl Iccp {
@@ -654,7 +658,7 @@ pub mod chunk {
     }
 
     /// Safe wrapper for [`spng_sys::spng_unknown_chunk`]
-    #[repr(C)]
+    #[repr(transparent)]
     pub struct UnknownChunk(pub(crate) spng_sys::spng_unknown_chunk);
 
     impl UnknownChunk {
