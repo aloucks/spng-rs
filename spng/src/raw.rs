@@ -9,6 +9,7 @@ use self::chunk::*;
 
 use spng_sys as sys;
 use std::{io, marker::PhantomData, mem, mem::MaybeUninit, ptr::NonNull, slice};
+
 unsafe extern "C" fn read_fn<R: io::Read>(
     _: *mut sys::spng_ctx,
     user: *mut libc::c_void,
