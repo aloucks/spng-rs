@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+<!-- - `Buffer` for encoding output (when set to buffer instead of stream) -->
+- `EncodeFlags`
+- `RawContext::encode_image`
+- `RawContext::encode_chunks`
+<!-- - `RawContext::get_png_buffer` -->
+- `RawContext::set_png_stream_writer`
+- `Decoder::with_ignore_adler32`
+- Additional encoding options in `SpngOptions`
+
+### Changed
+- `RawContext::set_png_stream` renamed to `RawContext::set_png_stream_reader`
+
+### Removed
+- RawContext::with_context_flags
 
 ## [0.2.0-alpha.3] - 2024-08-21
 ### Added

@@ -1,4 +1,7 @@
-use spng::{raw::ChunkAvail, BitDepth, ColorType, Decoder};
+use spng::{
+    raw::{chunk::Ihdr, ChunkAvail, RawContext},
+    BitDepth, ColorType, ContextFlags, Decoder, EncodeFlags,
+};
 use std::io::{BufReader, Cursor, Read};
 
 static TEST_PNG_001: &[u8] = include_bytes!("test-001.png");
@@ -91,7 +94,7 @@ fn decode_001_raw_context() -> Result<(), Box<dyn std::error::Error>> {
     use std::convert::TryFrom;
     let out_format = spng::Format::Rgba8;
     let mut ctx = spng::raw::RawContext::new()?;
-    ctx.set_png_stream(TEST_PNG_001)?;
+    ctx.set_png_stream_reader(TEST_PNG_001)?;
     let ihdr = ctx.get_ihdr()?;
     assert_eq!(300, ihdr.width);
     assert_eq!(300, ihdr.height);
@@ -106,6 +109,26 @@ fn decode_001_raw_context() -> Result<(), Box<dyn std::error::Error>> {
         .expect("text chunk in test image");
     let text_str = text[0].text()?;
     assert_eq!("Created with GIMP", text_str);
+    Ok(())
+}
+
+#[test]
+fn encode_001_raw_context() -> Result<(), Box<dyn std::error::Error>> {
+    let fmt = spng::Format::Rgba8;
+    let (out_info, data) = spng::decode(Cursor::new(TEST_PNG_001), fmt)?;
+    let mut ctx = RawContext::with_flags(ContextFlags::ENCODER)?;
+    let out_file = std::fs::File::create("target/out.png")?;
+    ctx.set_ihdr(Ihdr {
+        width: out_info.width,
+        height: out_info.height,
+        bit_depth: out_info.bit_depth as _,
+        color_type: out_info.color_type as _,
+        compression_method: 0,
+        filter_method: 0,
+        interlace_method: 0,
+    })?;
+    ctx.set_png_stream_writer(out_file)?;
+    ctx.encode_image(&data, spng::Format::Png, EncodeFlags::empty())?;
     Ok(())
 }
 

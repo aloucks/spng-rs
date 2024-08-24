@@ -137,6 +137,17 @@ impl TryFrom<u8> for BitDepth {
 }
 
 bitflags::bitflags! {
+    /// Encoding flags
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct EncodeFlags: u32 {
+        /// Initialize for progressive writes
+        const PROGRESSIVE = sys::spng_encode_flags_SPNG_ENCODE_PROGRESSIVE;
+        /// Finalize PNG after encoding image
+        const FINALIZE = sys::spng_encode_flags_SPNG_ENCODE_FINALIZE ;
+    }
+}
+
+bitflags::bitflags! {
     /// Decoding flags
     #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct DecodeFlags: u32 {
@@ -156,15 +167,25 @@ bitflags::bitflags! {
     pub struct ContextFlags: u32 {
         /// Ignore checksum in `DEFLATE` streams
         const IGNORE_ADLER32 = sys::spng_ctx_flags_SPNG_CTX_IGNORE_ADLER32;
+        const ENCODER = sys::spng_ctx_flags_SPNG_CTX_ENCODER;
     }
 }
 
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum SpngOption {
+    KeepUnknownChunks = sys::spng_option_SPNG_KEEP_UNKNOWN_CHUNKS,
     ZlibCompressionLevel = sys::spng_option_SPNG_IMG_COMPRESSION_LEVEL,
     ZlibWindowBits = sys::spng_option_SPNG_IMG_WINDOW_BITS,
+    ImgMemLevel = sys::spng_option_SPNG_IMG_MEM_LEVEL,
+    ImgCompressionStrategy = sys::spng_option_SPNG_IMG_COMPRESSION_STRATEGY,
+    TextCompressionLevel = sys::spng_option_SPNG_TEXT_COMPRESSION_LEVEL,
+    TextWindowBits = sys::spng_option_SPNG_TEXT_WINDOW_BITS,
+    TextMemLevel = sys::spng_option_SPNG_TEXT_MEM_LEVEL,
+    TextCompressionStrategy = sys::spng_option_SPNG_TEXT_COMPRESSION_STRATEGY,
+    FilterChoice = sys::spng_option_SPNG_FILTER_CHOICE,
     ChunkCountLimit = sys::spng_option_SPNG_CHUNK_COUNT_LIMIT,
+    EncodeToBuffer = sys::spng_option_SPNG_ENCODE_TO_BUFFER,
 }
 
 /// Decoding limits
@@ -307,8 +328,12 @@ impl<R> Decoder<R> {
         self
     }
 
-    pub fn with_context_flags(mut self, context_flags: ContextFlags) -> Decoder<R> {
-        self.context_flags = context_flags;
+    pub fn with_ignore_adler32(mut self, ignore: bool) -> Decoder<R> {
+        if ignore {
+            self.context_flags.insert(ContextFlags::IGNORE_ADLER32);
+        } else {
+            self.context_flags.remove(ContextFlags::IGNORE_ADLER32);
+        }
         self
     }
 
@@ -348,7 +373,7 @@ impl<R> Decoder<R> {
     {
         let mut ctx = RawContext::with_flags(self.context_flags)?;
         ctx.set_image_limits(self.limits.max_width, self.limits.max_height)?;
-        ctx.set_png_stream(self.reader)?;
+        ctx.set_png_stream_reader(self.reader)?;
         let ihdr = ctx.get_ihdr()?;
         let output_buffer_size = ctx.decoded_image_size(self.output_format)?;
         let reader = Reader {

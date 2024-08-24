@@ -2,7 +2,7 @@
 
 use crate::{
     error::{check_err, Error},
-    ContextFlags, CrcAction, DecodeFlags, Format, SpngOption,
+    ContextFlags, CrcAction, DecodeFlags, EncodeFlags, Format, SpngOption,
 };
 
 use self::chunk::*;
@@ -29,6 +29,21 @@ unsafe extern "C" fn read_fn<R: io::Read>(
         }
     }
     sys::spng_errno_SPNG_OK
+}
+
+unsafe extern "C" fn write_fn<W: io::Write>(
+    _: *mut sys::spng_ctx,
+    user: *mut libc::c_void,
+    src: *mut libc::c_void,
+    len: usize,
+) -> libc::c_int {
+    let writer: &mut W = &mut *(user as *mut W as *mut _);
+    let src = slice::from_raw_parts_mut(src as *mut u8, len);
+    let ret = writer.write_all(src);
+    match ret {
+        Ok(()) => sys::spng_errno_SPNG_OK,
+        Err(_) => sys::spng_errno_SPNG_IO_ERROR,
+    }
 }
 
 /// Helper trait for converting optional ancillary chunks into `Option<T>`.
@@ -65,24 +80,55 @@ impl<T> ChunkAvail<T> for Result<T, Error> {
     }
 }
 
+// pub struct Buffer<'a> {
+//     ptr: *mut libc::c_void,
+//     len: usize,
+//     _phantom: PhantomData<&'a mut ()>
+// }
+
+// impl<'a> Buffer<'a> {
+//     #[doc(hidden)]
+//     fn new(ptr: *mut libc::c_void, len: usize) -> Option<Buffer<'a>> {
+//         if ptr.is_null() {
+//             None
+//         } else {
+//             Some(Buffer { ptr, len, _phantom: PhantomData })
+//         }
+//     }
+// }
+
+// impl<'a> std::ops::Deref for Buffer<'a> {
+//     type Target = [u8];
+
+//     fn deref(&self) -> &Self::Target {
+//         unsafe { slice::from_raw_parts(self.ptr as _, self.len) }
+//     }
+// }
+
+// impl<'a> Drop for Buffer<'a> {
+//     fn drop(&mut self) {
+//         unsafe { libc::free(self.ptr) }
+//     }
+// }
+
 /// The raw decoding context.
 ///
 /// * <https://libspng.org/>
 /// * <http://www.libpng.org/pub/png/spec/1.1/PNG-Contents.html>
 #[derive(Debug)]
-pub struct RawContext<R> {
+pub struct RawContext<S> {
     raw: *mut sys::spng_ctx,
-    reader: Option<NonNull<R>>,
+    rw_fn: Option<NonNull<S>>,
 }
 
-impl<R> Drop for RawContext<R> {
+impl<S> Drop for RawContext<S> {
     fn drop(&mut self) {
         if !self.raw.is_null() {
             unsafe {
                 sys::spng_ctx_free(self.raw);
             }
         }
-        if let Some(reader) = self.reader {
+        if let Some(reader) = self.rw_fn {
             unsafe {
                 drop(Box::from_raw(reader.as_ptr()));
             }
@@ -90,18 +136,18 @@ impl<R> Drop for RawContext<R> {
     }
 }
 
-impl<R> RawContext<R> {
-    pub fn new() -> Result<RawContext<R>, Error> {
+impl<S> RawContext<S> {
+    pub fn new() -> Result<RawContext<S>, Error> {
         RawContext::with_flags(ContextFlags::empty())
     }
 
-    pub fn with_flags(flags: ContextFlags) -> Result<RawContext<R>, Error> {
+    pub fn with_flags(flags: ContextFlags) -> Result<RawContext<S>, Error> {
         unsafe {
             let raw = sys::spng_ctx_new(flags.bits() as _);
             if raw.is_null() {
                 Err(Error::Mem)
             } else {
-                Ok(RawContext { raw, reader: None })
+                Ok(RawContext { raw, rw_fn: None })
             }
         }
     }
@@ -170,6 +216,13 @@ impl<R> RawContext<R> {
             let mut chunk = MaybeUninit::uninit();
             check_err(sys::spng_get_ihdr(self.raw, chunk.as_mut_ptr()))?;
             Ok(chunk.assume_init())
+        }
+    }
+
+    pub fn set_ihdr(&mut self, mut ihdr: Ihdr) -> Result<(), Error> {
+        unsafe {
+            check_err(sys::spng_set_ihdr(self.raw, &mut ihdr))?;
+            Ok(())
         }
     }
 
@@ -511,15 +564,66 @@ impl<R> RawContext<R> {
         }
         Ok(value as _)
     }
+
+    /// Encode all stored chunks before or after the image data (IDAT) stream, depending on the
+    /// state of the encoder.
+    ///
+    /// If the image is encoded this function will also finalize the PNG with the end-of-file (IEND)
+    /// marker.
+    ///
+    /// Calling this function before spng_encode_image() is optional.
+    pub fn encode_chunks(&mut self) -> Result<(), Error> {
+        unsafe { check_err(sys::spng_encode_chunks(self.raw)) }
+    }
+
+    /// TODO: <https://libspng.org/docs/encode/#spng_encode_image>
+    pub fn encode_image(
+        &mut self,
+        src: &[u8],
+        src_fmt: Format,
+        flags: EncodeFlags,
+    ) -> Result<(), Error> {
+        unsafe {
+            check_err(sys::spng_encode_image(
+                self.raw,
+                src.as_ptr() as _,
+                src.len(),
+                src_fmt as _,
+                flags.bits() as _,
+            ))
+        }
+    }
+
+    // /// TODO: <https://libspng.org/docs/encode/#spng_get_png_buffer>
+    // pub fn get_png_buffer<'a>(&'a mut self) -> Result<Buffer<'a>, Error> {
+    //     unsafe {
+    //         let mut error = 0;
+    //         let mut len = 0;
+    //         let ptr = sys::spng_get_png_buffer(self.raw, &mut len, &mut error);
+    //         check_err(error)?;
+    //         Buffer::new(ptr, len).ok_or(Error::Inval)
+    //     }
+    // }
 }
 
 impl<R: io::Read> RawContext<R> {
     /// Set the input `png` stream reader. The input buffer or stream may only be set once per context.
-    pub fn set_png_stream(&mut self, reader: R) -> Result<(), Error> {
+    pub fn set_png_stream_reader(&mut self, reader: R) -> Result<(), Error> {
         let boxed = Box::new(reader);
         let unboxed = Box::into_raw(boxed);
-        self.reader = NonNull::new(unboxed);
+        self.rw_fn = NonNull::new(unboxed);
         let rw_fn: sys::spng_rw_fn = Some(read_fn::<R>);
+        unsafe { check_err(sys::spng_set_png_stream(self.raw, rw_fn, unboxed as *mut _)) }
+    }
+}
+
+impl<W: io::Write> RawContext<W> {
+    /// Set the output `png` stream writer. The input buffer or stream may only be set once per context.
+    pub fn set_png_stream_writer(&mut self, writer: W) -> Result<(), Error> {
+        let boxed = Box::new(writer);
+        let unboxed = Box::into_raw(boxed);
+        self.rw_fn = NonNull::new(unboxed);
+        let rw_fn: sys::spng_rw_fn = Some(write_fn::<W>);
         unsafe { check_err(sys::spng_set_png_stream(self.raw, rw_fn, unboxed as *mut _)) }
     }
 }
