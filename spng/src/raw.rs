@@ -416,7 +416,7 @@ impl<R> RawContext<R> {
     /// The `out` buffer must have a length greater or equal to the size returned by [`decoded_image_size`] with
     /// the same `out_format`.
     ///
-    /// If the `SPNG_DECODE_PROGRESSIVE` flag is set, the context will be initialied with `out_format` for
+    /// If the `SPNG_DECODE_PROGRESSIVE` flag is set, the context will be initialized with `out_format` for
     /// progressive decoding. The image is not immediately decoded and the `out` buffer is ignored.
     ///
     /// The `SPNG_DECODE_TRNS` flag is ignored if the PNG has an alpha channel or does not contain a `TRNS`
