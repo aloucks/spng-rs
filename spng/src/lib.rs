@@ -36,9 +36,9 @@ use raw::RawContext;
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum CrcAction {
-    /// Default
+    /// Return decode error. Default for critical chunks
     Error = sys::spng_crc_action_SPNG_CRC_ERROR,
-    /// Discard chunk, invalid for critical chunks
+    /// Discard chunk. Default for ancillary chunks, invalid for critical chunks
     Discard = sys::spng_crc_action_SPNG_CRC_DISCARD,
     /// Ignore and don't calculate checksum
     Use = sys::spng_crc_action_SPNG_CRC_USE,
@@ -194,6 +194,8 @@ pub struct Decoder<R> {
     limits: Limits,
     context_flags: ContextFlags,
     decode_flags: DecodeFlags,
+    critical_chunk_crc_action: CrcAction,
+    ancillary_chunk_crc_action: CrcAction,
     output_format: Format,
 }
 
@@ -292,12 +294,16 @@ impl<R> Decoder<R> {
         let decode_flags = DecodeFlags::empty();
         let context_flags = ContextFlags::empty();
         let output_format = Format::Png;
+        let critical_chunk_crc_action = CrcAction::Error;
+        let ancillary_chunk_crc_action = CrcAction::Discard;
         let limits = Limits::default();
         Decoder {
             reader,
             limits,
             context_flags,
             decode_flags,
+            critical_chunk_crc_action,
+            ancillary_chunk_crc_action,
             output_format,
         }
     }
@@ -314,6 +320,12 @@ impl<R> Decoder<R> {
 
     pub fn with_decode_flags(mut self, decode_flags: DecodeFlags) -> Decoder<R> {
         self.decode_flags = decode_flags;
+        self
+    }
+
+    pub fn with_crc_actions(mut self, critical: CrcAction, ancillary: CrcAction) -> Decoder<R> {
+        self.critical_chunk_crc_action = critical;
+        self.ancillary_chunk_crc_action = ancillary;
         self
     }
 
@@ -348,6 +360,10 @@ impl<R> Decoder<R> {
     {
         let mut ctx = RawContext::with_flags(self.context_flags)?;
         ctx.set_image_limits(self.limits.max_width, self.limits.max_height)?;
+        ctx.set_crc_action(
+            self.critical_chunk_crc_action,
+            self.ancillary_chunk_crc_action,
+        )?;
         ctx.set_png_stream(self.reader)?;
         let ihdr = ctx.get_ihdr()?;
         let output_buffer_size = ctx.decoded_image_size(self.output_format)?;
